@@ -22,7 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include "SEGGER_RTT.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -77,7 +78,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,7 +101,7 @@ int main(void)
   MX_GPIO_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-
+  SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -277,7 +278,9 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-  	// switch LEDs
+    SEGGER_RTT_WriteString(0, "Switching LEDs state\r\n");
+
+    // switch LEDs
   	if(HAL_GPIO_ReadPin(GPIOB, LED_D2_Pin) != GPIO_PIN_SET)
   	{
   	  HAL_GPIO_WritePin(GPIOB, LED_D2_Pin, GPIO_PIN_SET);
