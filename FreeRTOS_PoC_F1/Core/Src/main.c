@@ -117,7 +117,7 @@ int main(void)
   MX_RTC_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
+  SEGGER_RTT_WriteString(0, "Hello from F1 board!\r\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -339,6 +339,7 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
+	TickType_t lastWakeTime = xTaskGetTickCount();
 
 	// turn on LED2
   HAL_GPIO_WritePin(GPIOB, LED_D2_Pin, GPIO_PIN_SET);
@@ -346,7 +347,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    SEGGER_RTT_WriteString(0, "Switching LEDs state\r\n");
+    SEGGER_RTT_WriteString(0, "Toggle LEDs\r\n");
 
     // switch LEDs
   	if(HAL_GPIO_ReadPin(GPIOB, LED_D2_Pin) != GPIO_PIN_SET)
@@ -361,7 +362,8 @@ void StartDefaultTask(void *argument)
 
   	}
 
-    osDelay(1000);
+  vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
+
   }
   /* USER CODE END 5 */
 }

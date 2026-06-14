@@ -6,6 +6,8 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "SEGGER_RTT.h"
+
 #include <string.h>
 
 extern UART_HandleTypeDef huart1;
@@ -35,6 +37,8 @@ bool UartDriver_GetChar(char *ch)
 		return false;
 
 	*ch = receivedChar;
+
+//  SEGGER_RTT_printf(0, "Got %c\r\n", *ch);
 
 	charReady = false;
 
