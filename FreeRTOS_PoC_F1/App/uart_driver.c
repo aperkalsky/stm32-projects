@@ -21,14 +21,29 @@ SemaphoreHandle_t txDoneSem;
 
 extern TaskHandle_t uartTaskHandle;
 
-void UartDriver_Init(void)
+UartDriverStatus_t UartDriver_Init(void)
 {
 	txDoneSem = xSemaphoreCreateBinary();
 
-	HAL_UART_Receive_IT(
-			&huart1,
-			&rxByte,
-			1);
+	if (txDoneSem == NULL)
+	{
+		return UART_DRV_SEM_CREATE_FAILED;
+	}
+
+	switch(HAL_UART_Receive_IT(&huart1,	&rxByte, 1))
+	{
+	case HAL_OK:
+		return UART_DRV_OK;
+
+	case HAL_BUSY:
+		return UART_DRV_HAL_BUSY;
+
+	case HAL_ERROR:
+		return UART_DRV_HAL_ERROR;
+
+	default:
+		return UART_DRV_HAL_ERROR;
+	}
 }
 
 bool UartDriver_GetChar(char *ch)
@@ -38,7 +53,7 @@ bool UartDriver_GetChar(char *ch)
 
 	*ch = receivedChar;
 
-//  SEGGER_RTT_printf(0, "Got %c\r\n", *ch);
+	//  SEGGER_RTT_printf(0, "Got %c\r\n", *ch);
 
 	charReady = false;
 

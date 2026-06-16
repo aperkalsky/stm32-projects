@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "uart_driver.h"
 #include "uart_task.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -117,6 +118,11 @@ int main(void)
   MX_RTC_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  if(UartDriver_Init() != UART_DRV_OK)
+  {
+  	Error_Handler();
+  }
+
   SEGGER_RTT_WriteString(0, "Hello from F1 board!\r\n");
   /* USER CODE END 2 */
 

@@ -11,8 +11,6 @@ void UartTask_Run(void *argument)
 {
 	char cmd;
 
-	UartDriver_Init();
-
 	for (;;)
 	{
 		ulTaskNotifyTake(
