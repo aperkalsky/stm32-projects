@@ -2,21 +2,19 @@
 
 #include "cmsis_os.h"
 
-//#include "SEGGER_RTT.h"
+#include "SEGGER_RTT.h"
 
 //#include "usb_driver.h"
 //#include "protocol.h"
 
 void UsbTask_Run(void *argument)
 {
-	char cmd;
+	TickType_t lastWakeTime = xTaskGetTickCount();
 
-	for (;;)
+	/* Infinite loop */
+	for(;;)
 	{
-	  /* Infinite loop */
-	  for(;;)
-	  {
-	    osDelay(1);
-	  }
+		SEGGER_RTT_WriteString(0, "In USB task\r\n");
+	  vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
 	}
 }
