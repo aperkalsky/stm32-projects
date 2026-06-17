@@ -14,6 +14,7 @@ void UsbTask_Run(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
+//		static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		SEGGER_RTT_WriteString(0, "In USB task\r\n");
 	  vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
 	}
