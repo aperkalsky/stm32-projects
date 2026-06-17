@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "usb_device.h"
+#include "usb_task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -310,11 +311,7 @@ void StartDefaultTask(void *argument)
 void StartUsbTask(void *argument)
 {
   /* USER CODE BEGIN StartUsbTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+	UsbTask_Run(argument);
   /* USER CODE END StartUsbTask */
 }
 
