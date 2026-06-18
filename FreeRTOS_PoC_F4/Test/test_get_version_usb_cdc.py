@@ -1,14 +1,43 @@
 import serial
 import struct
-import zlib
+#import zlib
 
 CMD_GET_VERSION = 0x01
 RESP_VERSION   = 0x82
 
+POLY = 0x04C11DB7
+
+def stm32_crc32(data):
+    crc = 0xFFFFFFFF
+
+    padded = bytearray(data)
+
+    while len(padded) % 4:
+        padded.append(0)
+
+    for i in range(0, len(padded), 4):
+
+        word = (
+            padded[i]
+            | (padded[i+1] << 8)
+            | (padded[i+2] << 16)
+            | (padded[i+3] << 24)
+        )
+
+        crc ^= word
+
+        for _ in range(32):
+            if crc & 0x80000000:
+                crc = ((crc << 1) ^ POLY) & 0xFFFFFFFF
+            else:
+                crc = (crc << 1) & 0xFFFFFFFF
+
+    return crc
+
 ser = serial.Serial(
     port="COM3",
     baudrate=115200,
-    timeout=2)
+    timeout=20)
 
 seq = 1
 payload = b''
@@ -19,7 +48,7 @@ packet = struct.pack(
     len(payload),
     seq)
 
-crc = zlib.crc32(packet) & 0xFFFFFFFF
+crc = stm32_crc32(packet) & 0xFFFFFFFF
 
 packet += struct.pack("<I", crc)
 
@@ -46,7 +75,7 @@ rx_crc = struct.unpack(
     "<I",
     crc_bytes)[0]
 
-calc_crc = zlib.crc32(
+calc_crc = stm32_crc32(
     hdr + payload) & 0xFFFFFFFF
 
 print(f"Type=0x{resp_type:02X}")

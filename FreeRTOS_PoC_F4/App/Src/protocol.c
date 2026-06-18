@@ -3,6 +3,7 @@
 //#include "crc.h"
 #include "cmsis_os.h"
 #include "main.h"
+#include "SEGGER_RTT.h"
 #include <string.h>
 
 #define RX_RING_SIZE    4096
@@ -93,6 +94,8 @@ static void SendResponse(
 	{
 		osDelay(1);
 	}
+
+	SEGGER_RTT_printf(0, "Xmitted %d bytes\r\n", pos);
 }
 
 static void HandlePacket(
@@ -101,6 +104,8 @@ static void HandlePacket(
 		uint8_t *payload,
 		uint16_t len)
 {
+	SEGGER_RTT_printf(0, "type = %d\r\n");
+
 	switch(type)
 	{
 	case CMD_GET_VERSION:
@@ -167,6 +172,8 @@ void Protocol_Process(void)
 	{
 		uint8_t byte =
 				gUsbRxRing[gUsbRxTail];
+
+		SEGGER_RTT_printf(0, "Byte %02X, h=%d t=%d s=%d\r\n", byte, gUsbRxHead, gUsbRxTail, rxState);
 
 		gUsbRxTail =
 				(gUsbRxTail + 1) %
@@ -240,6 +247,8 @@ void Protocol_Process(void)
 						CalcCrc32(
 								packetRaw,
 								packetRawIndex - 4);
+
+				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
 
 				if(rxCrc == calcCrc)
 				{
