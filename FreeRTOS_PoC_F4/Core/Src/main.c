@@ -323,10 +323,18 @@ void StartDefaultTask(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+	TickType_t lastWakeTime = xTaskGetTickCount();
+
+	// use LED0 as heartbeat
+	volatile uint8_t ledState = GPIO_PIN_RESET;
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    HAL_GPIO_WritePin(GPIOF, LED_0_Pin, ledState);
+  	vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(500));
+  	ledState = (ledState == GPIO_PIN_RESET)?GPIO_PIN_SET:GPIO_PIN_RESET;
+
   }
   /* USER CODE END 5 */
 }
