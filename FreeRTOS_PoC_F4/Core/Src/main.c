@@ -58,7 +58,7 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t usbTaskHandle;
 const osThreadAttr_t usbTask_attributes = {
   .name = "usbTask",
-  .stack_size = 128 * 4,
+  .stack_size = 196 * 4,
   .priority = (osPriority_t) osPriorityNormal1,
 };
 /* USER CODE BEGIN PV */

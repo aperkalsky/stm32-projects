@@ -42,11 +42,14 @@ static uint8_t crcBytes[4];
 static uint8_t packetRaw[512];
 static uint32_t packetRawIndex;
 
+static uint8_t tx[512];	// TX buffer for SendResponse()
+
+static uint32_t words[128]; // buffer for crc32 calculation
+
 static uint32_t CalcCrc32(
 		const uint8_t *data,
 		uint32_t len)
 {
-	uint32_t words[128];
 	uint32_t wordCount;
 //	uint32_t i;
 
@@ -70,8 +73,6 @@ static void SendResponse(
 		const uint8_t *payload,
 		uint16_t payloadLen)
 {
-	uint8_t tx[512];
-
 	uint32_t pos = 0;
 
 	tx[pos++] = type;
