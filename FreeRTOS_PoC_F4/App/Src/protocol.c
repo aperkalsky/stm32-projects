@@ -1,6 +1,5 @@
 #include "protocol.h"
 #include "usbd_cdc_if.h"
-//#include "crc.h"
 #include "cmsis_os.h"
 #include "main.h"
 #include "SEGGER_RTT.h"
@@ -8,6 +7,7 @@
 
 #define RX_RING_SIZE    4096
 #define MAX_PAYLOAD     256
+#define NUM_CRC_BYTES   4
 
 extern CRC_HandleTypeDef hcrc;
 
@@ -37,7 +37,7 @@ static uint8_t payload[MAX_PAYLOAD];
 static uint32_t rxPayloadIndex;
 static uint32_t rxCrcIndex;
 
-static uint8_t crcBytes[4];
+static uint8_t crcBytes[NUM_CRC_BYTES];
 
 static uint8_t packetRaw[512];
 static uint32_t packetRawIndex;
@@ -89,7 +89,7 @@ static void SendResponse(
 	uint32_t crc = CalcCrc32(tx, pos);
 
 	memcpy(&tx[pos], &crc, sizeof(crc));
-	pos += 4;
+	pos += NUM_CRC_BYTES;
 
 	while(CDC_Transmit_FS(tx, pos) == USBD_BUSY)
 	{
@@ -239,7 +239,7 @@ void Protocol_Process(void)
 		case RX_CRC:
 			crcBytes[rxCrcIndex++] = byte;
 
-			if(rxCrcIndex == 4)
+			if(rxCrcIndex == NUM_CRC_BYTES)
 			{
 				uint32_t rxCrc;
 				uint32_t calcCrc;
@@ -247,12 +247,12 @@ void Protocol_Process(void)
 				memcpy(
 						&rxCrc,
 						crcBytes,
-						4);
+						NUM_CRC_BYTES);
 
 				calcCrc =
 						CalcCrc32(
 								packetRaw,
-								packetRawIndex - 4);
+								packetRawIndex - NUM_CRC_BYTES);
 
 				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
 
