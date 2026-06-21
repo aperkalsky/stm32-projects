@@ -6,6 +6,9 @@
 #include <string.h>
 
 #define RX_RING_SIZE    4096
+#define RX_RAW_PACKET_BUF_SIZE 512	// here we collect incoming TLV bytes of Rx packet
+#define tX_RAW_PACKET_BUF_SIZE 512	// here we prepare formatted TLV response
+#define CRC_CALC_BUF_SIZE 128
 #define MAX_PAYLOAD     256
 #define NUM_CRC_BYTES   4
 #define USB_TX_BUSY_WAIT_TIMEOUT_MS  100
@@ -41,12 +44,12 @@ static uint32_t rxCrcIndex;
 
 static uint8_t crcBytes[NUM_CRC_BYTES];
 
-static uint8_t packetRaw[512];
+static uint8_t packetRaw[RX_RAW_PACKET_BUF_SIZE];
 static uint32_t packetRawIndex;
 
-static uint8_t tx[512];	// TX buffer for SendResponse()
+static uint8_t tx[tX_RAW_PACKET_BUF_SIZE];	// TX buffer for SendResponse()
 
-static uint32_t words[128]; // buffer for crc32 calculation
+static uint32_t words[CRC_CALC_BUF_SIZE]; // buffer for crc32 calculation
 
 static uint32_t CalcCrc32(
 		const uint8_t *data,
