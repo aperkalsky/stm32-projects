@@ -84,14 +84,14 @@ for iteration in range(repetitions):
     #
     # Read header
     #
-    hdr = ser.read(5)
+    hdr = ser.read(7)
 
-    if len(hdr) != 5:
+    if len(hdr) != 7:
         print("Timeout waiting for response")
         break
 
-    resp_type, length, resp_seq = struct.unpack(
-        "<BHH",
+    resp_type, length, resp_seq, status = struct.unpack(
+        "<BHHH",
         hdr
     )
 
@@ -119,6 +119,7 @@ for iteration in range(repetitions):
     print(f"Type=0x{resp_type:02X}")
     print(f"Length={length}")
     print(f"Seq={resp_seq}")
+    print(f"Status={status}")
 
     if rx_crc != calc_crc:
         print("CRC ERROR")

@@ -5,14 +5,6 @@
 #include "SEGGER_RTT.h"
 #include <string.h>
 
-#define RX_RING_SIZE    4096
-#define RX_RAW_PACKET_BUF_SIZE 512	// here we collect incoming TLV bytes of Rx packet
-#define tX_RAW_PACKET_BUF_SIZE 512	// here we prepare formatted TLV response
-#define CRC_CALC_BUF_SIZE 128
-#define MAX_PAYLOAD     256
-#define NUM_CRC_BYTES   4
-#define USB_TX_BUSY_WAIT_TIMEOUT_MS  100
-
 extern CRC_HandleTypeDef hcrc;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -37,17 +29,17 @@ static uint8_t packetType;
 static uint16_t packetLength;
 static uint16_t packetSeq;
 
-static uint8_t payload[MAX_PAYLOAD];
+static uint8_t rxPayload[TLV_MAX_RX_PAYLOAD_SIZE];
 
 static uint32_t rxPayloadIndex;
 static uint32_t rxCrcIndex;
 
-static uint8_t crcBytes[NUM_CRC_BYTES];
+static uint8_t crcBytes[TLV_CRC_SIZE];
 
 static uint8_t packetRaw[RX_RAW_PACKET_BUF_SIZE];
 static uint32_t packetRawIndex;
 
-static uint8_t tx[tX_RAW_PACKET_BUF_SIZE];	// TX buffer for SendResponse()
+static uint8_t tx[TX_RAW_PACKET_BUF_SIZE];	// TX buffer for SendResponse()
 
 static uint32_t words[CRC_CALC_BUF_SIZE]; // buffer for crc32 calculation
 
@@ -93,6 +85,7 @@ static uint8_t UsbTransmit(
 static uint8_t SendResponse(
 		uint8_t type,
 		uint16_t seq,
+		uint16_t status,
 		const uint8_t *payload,
 		uint16_t payloadLen)
 {
@@ -106,13 +99,16 @@ static uint8_t SendResponse(
 	tx[pos++] = seq & 0xff;
 	tx[pos++] = seq >> 8;
 
+	tx[pos++] = status & 0xff;
+	tx[pos++] = status >> 8;
+
 	memcpy(&tx[pos], payload, payloadLen);
 	pos += payloadLen;
 
 	uint32_t crc = CalcCrc32(tx, pos);
 
 	memcpy(&tx[pos], &crc, sizeof(crc));
-	pos += NUM_CRC_BYTES;
+	pos += TLV_CRC_SIZE;
 
 	SEGGER_RTT_printf(0, "Xmitting %d bytes\r\n", pos);
 
@@ -134,51 +130,21 @@ static void HandlePacket(
 		const char ver[] = "1.0";
 
 		SendResponse(
-				RESP_VERSION,
+				CMD_GET_VERSION,
 				seq,
+				TLV_STAT_OK,
 				(uint8_t*)ver,
 				sizeof(ver));
 
 		break;
 	}
 
-	/*	case CMD_LED_ON:
-	{
-		HAL_GPIO_WritePin(
-				LD2_GPIO_Port,
-				LD2_Pin,
-				GPIO_PIN_SET);
-
-		SendResponse(
-				RESP_OK,
-				seq,
-				NULL,
-				0);
-
-		break;
-	}
-
-	case CMD_LED_OFF:
-	{
-		HAL_GPIO_WritePin(
-				LD2_GPIO_Port,
-				LD2_Pin,
-				GPIO_PIN_RESET);
-
-		SendResponse(
-				RESP_OK,
-				seq,
-				NULL,
-				0);
-
-		break;
-	} */
-
 	default:
 	{
 		SendResponse(
-				RESP_ERROR,
+				type,
 				seq,
+				TLV_STAT_NOT_IMPLEMENTED,
 				NULL,
 				0);
 
@@ -246,7 +212,7 @@ void Protocol_Process(void)
 			break;
 
 		case RX_PAYLOAD:
-			payload[rxPayloadIndex++] = byte;
+			rxPayload[rxPayloadIndex++] = byte;
 
 			if(rxPayloadIndex >= packetLength)
 			{
@@ -259,7 +225,7 @@ void Protocol_Process(void)
 		case RX_CRC:
 			crcBytes[rxCrcIndex++] = byte;
 
-			if(rxCrcIndex == NUM_CRC_BYTES)
+			if(rxCrcIndex == TLV_CRC_SIZE)
 			{
 				uint32_t rxCrc;
 				uint32_t calcCrc;
@@ -267,12 +233,12 @@ void Protocol_Process(void)
 				memcpy(
 						&rxCrc,
 						crcBytes,
-						NUM_CRC_BYTES);
+						TLV_CRC_SIZE);
 
 				calcCrc =
 						CalcCrc32(
 								packetRaw,
-								packetRawIndex - NUM_CRC_BYTES);
+								packetRawIndex - TLV_CRC_SIZE);
 
 				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
 
@@ -281,7 +247,7 @@ void Protocol_Process(void)
 					HandlePacket(
 							packetType,
 							packetSeq,
-							payload,
+							rxPayload,
 							packetLength);
 				}
 
