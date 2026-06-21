@@ -23,6 +23,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "SEGGER_RTT.h"
+#include "protocol.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,7 +98,7 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 volatile uint32_t gUsbRxHead;
 volatile uint32_t gUsbRxTail;
 
-uint8_t gUsbRxRing[4096];
+uint8_t gUsbRxRing[RX_RING_SIZE];
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
