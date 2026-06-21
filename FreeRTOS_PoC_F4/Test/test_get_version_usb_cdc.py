@@ -1,11 +1,12 @@
 import serial
 import struct
-#import zlib
+import sys
 
 CMD_GET_VERSION = 0x01
-RESP_VERSION   = 0x82
+RESP_VERSION    = 0x82
 
 POLY = 0x04C11DB7
+
 
 def stm32_crc32(data):
     crc = 0xFFFFFFFF
@@ -19,9 +20,9 @@ def stm32_crc32(data):
 
         word = (
             padded[i]
-            | (padded[i+1] << 8)
-            | (padded[i+2] << 16)
-            | (padded[i+3] << 24)
+            | (padded[i + 1] << 8)
+            | (padded[i + 2] << 16)
+            | (padded[i + 3] << 24)
         )
 
         crc ^= word
@@ -34,63 +35,105 @@ def stm32_crc32(data):
 
     return crc
 
+
+#
+# Optional command-line argument:
+#   python test_get_version_usb_cdc.py
+#   python test_get_version_usb_cdc.py 100
+#
+repetitions = 1
+
+if len(sys.argv) > 1:
+    try:
+        repetitions = int(sys.argv[1])
+
+        if repetitions < 1:
+            raise ValueError()
+
+    except ValueError:
+        print("Usage: python test_get_version_usb_cdc.py [repetitions]")
+        sys.exit(1)
+
+
 ser = serial.Serial(
     port="COM3",
     baudrate=115200,
-    timeout=20)
+    timeout=20
+)
 
 seq = 1
-payload = b''
+tx_payload = b''
 
-packet = struct.pack(
-    "<BHH",
-    CMD_GET_VERSION,
-    len(payload),
-    seq)
+for iteration in range(repetitions):
 
-crc = stm32_crc32(packet) & 0xFFFFFFFF
+    packet = struct.pack(
+        "<BHH",
+        CMD_GET_VERSION,
+        len(tx_payload),
+        seq
+    )
 
-packet += struct.pack("<I", crc)
+    crc = stm32_crc32(packet) & 0xFFFFFFFF
+    packet += struct.pack("<I", crc)
 
-ser.write(packet)
+    print(f"\n=== Transaction {iteration + 1}/{repetitions} ===")
+    print(f"Sending request with Seq={seq}")
 
-#
-# Read header
-#
-hdr = ser.read(5)
+    ser.write(packet)
 
-if len(hdr) != 5:
-    print("Timeout waiting for response")
-    exit()
+    #
+    # Read header
+    #
+    hdr = ser.read(5)
 
-resp_type, length, resp_seq = struct.unpack(
-    "<BHH",
-    hdr)
+    if len(hdr) != 5:
+        print("Timeout waiting for response")
+        break
 
-payload = ser.read(length)
+    resp_type, length, resp_seq = struct.unpack(
+        "<BHH",
+        hdr
+    )
 
-crc_bytes = ser.read(4)
+    rx_payload = ser.read(length)
 
-rx_crc = struct.unpack(
-    "<I",
-    crc_bytes)[0]
+    if len(rx_payload) != length:
+        print("Timeout reading payload")
+        break
 
-calc_crc = stm32_crc32(
-    hdr + payload) & 0xFFFFFFFF
+    crc_bytes = ser.read(4)
 
-print(f"Type=0x{resp_type:02X}")
-print(f"Length={length}")
-print(f"Seq={resp_seq}")
+    if len(crc_bytes) != 4:
+        print("Timeout reading CRC")
+        break
 
-if rx_crc != calc_crc:
-    print("CRC ERROR")
-    exit()
+    rx_crc = struct.unpack(
+        "<I",
+        crc_bytes
+    )[0]
 
-if resp_type == RESP_VERSION:
-    version = payload.decode(
-        "ascii",
-        errors="ignore")
+    calc_crc = stm32_crc32(
+        hdr + rx_payload
+    ) & 0xFFFFFFFF
 
-    print("Version:", version)
+    print(f"Type=0x{resp_type:02X}")
+    print(f"Length={length}")
+    print(f"Seq={resp_seq}")
+
+    if rx_crc != calc_crc:
+        print("CRC ERROR")
+        print(f"Received CRC : 0x{rx_crc:08X}")
+        print(f"Expected CRC : 0x{calc_crc:08X}")
+        break
+
+    if resp_type == RESP_VERSION:
+        version = rx_payload.decode(
+            "ascii",
+            errors="ignore"
+        )
+
+        print("Version:", version)
+
+    seq += 1
 
 ser.close()
