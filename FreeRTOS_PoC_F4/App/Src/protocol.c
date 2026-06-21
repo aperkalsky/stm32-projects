@@ -8,8 +8,10 @@
 #define RX_RING_SIZE    4096
 #define MAX_PAYLOAD     256
 #define NUM_CRC_BYTES   4
+#define USB_TX_BUSY_WAIT_TIMEOUT_MS  100
 
 extern CRC_HandleTypeDef hcrc;
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 extern volatile uint32_t gUsbRxHead;
 extern volatile uint32_t gUsbRxTail;
@@ -51,7 +53,6 @@ static uint32_t CalcCrc32(
 		uint32_t len)
 {
 	uint32_t wordCount;
-//	uint32_t i;
 
 	memset(words, 0, sizeof(words));
 
@@ -67,7 +68,26 @@ static uint32_t CalcCrc32(
 			wordCount);
 }
 
-static void SendResponse(
+static uint8_t UsbTransmit(
+		uint8_t *buf,
+		uint16_t len)
+{
+	USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+
+	uint32_t start = osKernelGetTickCount();
+
+	while (hcdc->TxState)
+	{
+		if ((osKernelGetTickCount() - start) > USB_TX_BUSY_WAIT_TIMEOUT_MS)
+			return USBD_BUSY;
+
+		osDelay(1);
+	}
+
+	return CDC_Transmit_FS(buf, len) == USBD_OK;
+}
+
+static uint8_t SendResponse(
 		uint8_t type,
 		uint16_t seq,
 		const uint8_t *payload,
@@ -91,12 +111,9 @@ static void SendResponse(
 	memcpy(&tx[pos], &crc, sizeof(crc));
 	pos += NUM_CRC_BYTES;
 
-	while(CDC_Transmit_FS(tx, pos) == USBD_BUSY)
-	{
-		osDelay(1);
-	}
+	SEGGER_RTT_printf(0, "Xmitting %d bytes\r\n", pos);
 
-	SEGGER_RTT_printf(0, "Xmitted %d bytes\r\n", pos);
+	return UsbTransmit(tx, pos);
 }
 
 static void HandlePacket(
