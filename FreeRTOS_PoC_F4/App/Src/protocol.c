@@ -214,9 +214,14 @@ void Protocol_Process(void)
 			rxPayloadIndex = 0;
 
 			if(packetLength == 0)
+			{
+				rxCrcIndex = 0;
 				rxState = RX_CRC;
+			}
 			else
+			{
 				rxState = RX_PAYLOAD;
+			}
 
 			break;
 
