@@ -115,6 +115,34 @@ static uint8_t SendResponse(
 	return UsbTransmit(tx, pos);
 }
 
+// Message handlers start
+// ----------------------
+
+void OnCmdGetVersion(uint16_t seq)
+{
+	const char ver[] = "1.0";
+
+	SendResponse(
+			CMD_GET_VERSION,
+			seq,
+			TLV_STAT_OK,
+			(uint8_t*)ver,
+			sizeof(ver));
+}
+
+void OnUnknownCommand(uint8_t type, uint16_t seq)
+{
+	SendResponse(
+			type,
+			seq,
+			TLV_STAT_NOT_IMPLEMENTED,
+			NULL,
+			0);
+}
+
+// Message handlers end
+// --------------------
+
 static void HandlePacket(
 		uint8_t type,
 		uint16_t seq,
@@ -126,30 +154,12 @@ static void HandlePacket(
 	switch(type)
 	{
 	case CMD_GET_VERSION:
-	{
-		const char ver[] = "1.0";
-
-		SendResponse(
-				CMD_GET_VERSION,
-				seq,
-				TLV_STAT_OK,
-				(uint8_t*)ver,
-				sizeof(ver));
-
+		OnCmdGetVersion(seq);
 		break;
-	}
 
 	default:
-	{
-		SendResponse(
-				type,
-				seq,
-				TLV_STAT_NOT_IMPLEMENTED,
-				NULL,
-				0);
-
+		OnUnknownCommand(type, seq);
 		break;
-	}
 	}
 }
 
