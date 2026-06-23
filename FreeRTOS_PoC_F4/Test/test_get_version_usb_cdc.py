@@ -68,7 +68,7 @@ for iteration in range(repetitions):
 
     packet = struct.pack(
         "<BHH",
-        CMD_GET_FW_VERSION,
+        CMD_GET_FLASH_ID,
         len(tx_payload),
         seq
     )
