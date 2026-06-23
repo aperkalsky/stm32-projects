@@ -2,8 +2,8 @@ import serial
 import struct
 import sys
 
-CMD_GET_VERSION = 0x01
-RESP_VERSION    = 0x82
+CMD_GET_FW_VERSION  = 0x01
+CMD_GET_FLASH_ID    = 0x02
 
 POLY = 0x04C11DB7
 
@@ -68,7 +68,7 @@ for iteration in range(repetitions):
 
     packet = struct.pack(
         "<BHH",
-        CMD_GET_VERSION,
+        CMD_GET_FW_VERSION,
         len(tx_payload),
         seq
     )
@@ -127,7 +127,7 @@ for iteration in range(repetitions):
         print(f"Expected CRC : 0x{calc_crc:08X}")
         break
 
-    if resp_type == RESP_VERSION:
+    if resp_type == CMD_GET_FW_VERSION:
         version = rx_payload.decode(
             "ascii",
             errors="ignore"

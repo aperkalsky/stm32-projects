@@ -72,9 +72,8 @@
 
 // TLV commands
 // ============
-#define CMD_GET_VERSION     0x01
-#define CMD_LED_ON          0x02
-#define CMD_LED_OFF         0x03
+#define CMD_GET_FW_VERSION     0x01
+#define CMD_GET_FLASH_ID		   0x02
 
 // TLV response statuses
 #define TLV_STAT_OK         0x0000

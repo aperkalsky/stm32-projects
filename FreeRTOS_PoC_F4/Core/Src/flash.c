@@ -51,7 +51,7 @@ void FlashReset(void)
 	osDelay(100);
 }
 
-uint32_t W25Q_ReadID(void)
+uint32_t FlashReadID(void)
 {
 	spiIoBuf[0] = FLASH_CMD_READ_JEDEC_ID;
 	FlashCsSelect();

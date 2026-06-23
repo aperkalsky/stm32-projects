@@ -4,6 +4,7 @@
 #include "main.h"
 #include "SEGGER_RTT.h"
 #include <string.h>
+#include "flash.h"
 
 extern CRC_HandleTypeDef hcrc;
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -118,16 +119,30 @@ static uint8_t SendResponse(
 // Message handlers start
 // ----------------------
 
-void OnCmdGetVersion(uint16_t seq)
+void OnCmdGetFwVersion(uint16_t seq)
 {
 	const char ver[] = "1.0";
 
 	SendResponse(
-			CMD_GET_VERSION,
+			CMD_GET_FW_VERSION,
 			seq,
 			TLV_STAT_OK,
 			(uint8_t*)ver,
 			sizeof(ver));
+}
+
+void OnCmdGetFlashID(uint16_t seq)
+{
+	FlashReset();
+	uint32_t id = FlashReadID();
+	SEGGER_RTT_printf(0, "Flash ID = %08X\r\n", id);
+
+	SendResponse(
+			CMD_GET_FLASH_ID,
+			seq,
+			TLV_STAT_OK,
+			NULL,
+			0);
 }
 
 void OnUnknownCommand(uint8_t type, uint16_t seq)
@@ -153,8 +168,12 @@ static void HandlePacket(
 
 	switch(type)
 	{
-	case CMD_GET_VERSION:
-		OnCmdGetVersion(seq);
+	case CMD_GET_FW_VERSION:
+		OnCmdGetFwVersion(seq);
+		break;
+
+	case CMD_GET_FLASH_ID:
+		OnCmdGetFlashID(seq);
 		break;
 
 	default:

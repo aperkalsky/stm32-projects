@@ -9,7 +9,7 @@
 #define _FLASH_H_
 
 void FlashReset(void);
-uint32_t W25Q_ReadID(void);
+uint32_t FlashReadID(void);
 
 // Flash commands
 #define FLASH_CMD_WRITE_ENABLE				0x06
