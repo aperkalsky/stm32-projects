@@ -80,6 +80,17 @@
 #define TLV_STAT_TIMEOUT    0x0001
 #define TLV_STAT_NOT_IMPLEMENTED	0x0002
 
+// Data structures
+
+#pragma pack(push, 1)
+
+typedef struct{
+	uint8_t major;
+	uint8_t minor;
+} GET_FW_VERSION_OUT;
+
+#pragma pack(pop)
+
 void Protocol_Process(void);
 
 #endif

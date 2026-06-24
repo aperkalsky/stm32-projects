@@ -31,6 +31,7 @@ static uint16_t packetLength;
 static uint16_t packetSeq;
 
 static uint8_t rxPayload[TLV_MAX_RX_PAYLOAD_SIZE];
+static uint8_t txPayload[TLV_MAX_TX_PAYLOAD_SIZE];	// buffer for laying out the response
 
 static uint32_t rxPayloadIndex;
 static uint32_t rxCrcIndex;
@@ -87,7 +88,7 @@ static uint8_t SendResponse(
 		uint8_t type,
 		uint16_t seq,
 		uint16_t status,
-		const uint8_t *payload,
+		uint8_t *payload,
 		uint16_t payloadLen)
 {
 	uint32_t pos = 0;
@@ -121,14 +122,16 @@ static uint8_t SendResponse(
 
 void OnCmdGetFwVersion(uint16_t seq)
 {
-	const char ver[] = "1.0";
+	GET_FW_VERSION_OUT* pOut = (GET_FW_VERSION_OUT*)txPayload;
+	pOut->major = 1;
+	pOut->minor = 0;
 
 	SendResponse(
 			CMD_GET_FW_VERSION,
 			seq,
 			TLV_STAT_OK,
-			(uint8_t*)ver,
-			sizeof(ver));
+			txPayload,
+			sizeof(GET_FW_VERSION_OUT));
 }
 
 void OnCmdGetFlashID(uint16_t seq)
