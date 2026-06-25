@@ -1,6 +1,6 @@
 import serial
 
-# List of individual byte values
+# get FW version command
 byte_list = [0x01, 0x00, 0x00, 0x00, 0x00, 0xD4, 0xDC, 0x09, 0x20]
 
 packed_bytes = bytes(byte_list)

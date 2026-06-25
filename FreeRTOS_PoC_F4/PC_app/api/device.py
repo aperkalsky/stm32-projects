@@ -20,8 +20,6 @@ class Device:
         self._seq += 1
 
         self.transport.send(build_request(request))
-        print("data sent")
         response_raw = self.transport.receive()
-        print("data received")
-        print(response_raw)
+#        print(response_raw)
         return  parse_response(response_raw)
