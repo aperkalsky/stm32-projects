@@ -1,3 +1,5 @@
+# The logic that builds and parses TLV requests
+
 from dataclasses import dataclass
 from typing import Optional
 from protocol.crc import stm32_crc32
@@ -49,13 +51,13 @@ def parse_response(raw: bytes) -> TlvResponse:
 
     cmd, length, seq, status = struct.unpack(
         "<BHHH",
-        raw[:7]
+        raw[:TLV_TX_HEADER_SIZE]
     )
 
     payload = None
 
     if length > 0:
-        payload = raw[7:7 + length]
+        payload = raw[TLV_TX_HEADER_SIZE:TLV_TX_HEADER_SIZE + length]
 
     return TlvResponse(
         cmd=cmd,

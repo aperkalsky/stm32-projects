@@ -1,3 +1,5 @@
+# Payload definitions per TLV command (either Set or Get or both)
+
 import struct
 from dataclasses import dataclass
 from struct import calcsize

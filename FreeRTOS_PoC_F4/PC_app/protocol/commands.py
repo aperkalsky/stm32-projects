@@ -1,4 +1,4 @@
-# API commands
+# TLV API commands
 
 CMD_GET_FW_VERSION  = 0x01
 CMD_GET_FLASH_ID    = 0x02

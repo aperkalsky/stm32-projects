@@ -1,7 +1,8 @@
+# firmware-related API
+
 from payloads.payload import GetFwVersionOut
 from protocol.commands import CMD_GET_FW_VERSION
 from protocol.status import TlvStatus
-
 
 class FirmwareApi:
 

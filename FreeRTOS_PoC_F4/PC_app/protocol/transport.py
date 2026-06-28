@@ -1,5 +1,6 @@
-import struct
+# Communications class - send/receive TLVs over the CDC connection
 
+import struct
 import serial
 
 from protocol.crc import stm32_crc32

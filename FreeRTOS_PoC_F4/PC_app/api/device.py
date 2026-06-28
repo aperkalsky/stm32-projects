@@ -1,7 +1,8 @@
+# this class represents the target device as an instance that executes commands
+
 from api.firmware import FirmwareApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
-
 
 class Device:
 

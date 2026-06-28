@@ -1,3 +1,5 @@
+# return statuses available in protocol
+
 from enum import IntEnum
 
 class TlvStatus(IntEnum):
