@@ -1,6 +1,7 @@
 # this class represents the target device as an instance that executes commands
 
 from api.firmware import FirmwareApi
+from api.flash import FlashApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
@@ -11,7 +12,7 @@ class Device:
         self.transport = CdcTransport(port)
 
         self.firmware = FirmwareApi(self)
-#        self.flash = FlashApi(self)
+        self.flash = FlashApi(self)
 
         self._seq = 0
 

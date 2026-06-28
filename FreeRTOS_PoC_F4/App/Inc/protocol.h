@@ -89,6 +89,10 @@ typedef struct{
 	uint8_t minor;
 } GET_FW_VERSION_OUT;
 
+typedef struct{
+	uint32_t id;
+} GET_FLASH_ID_OUT;
+
 #pragma pack(pop)
 
 void Protocol_Process(void);

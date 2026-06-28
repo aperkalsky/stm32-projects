@@ -136,16 +136,19 @@ void OnCmdGetFwVersion(uint16_t seq)
 
 void OnCmdGetFlashID(uint16_t seq)
 {
+	GET_FLASH_ID_OUT* pOut = (GET_FLASH_ID_OUT*)txPayload;
+
 	FlashReset();
-	uint32_t id = FlashReadID();
-	SEGGER_RTT_printf(0, "Flash ID = %08X\r\n", id);
+	pOut->id = FlashReadID();
+
+	SEGGER_RTT_printf(0, "Flash ID = %08X\r\n", pOut->id);
 
 	SendResponse(
 			CMD_GET_FLASH_ID,
 			seq,
 			TLV_STAT_OK,
-			NULL,
-			0);
+			txPayload,
+			sizeof(GET_FLASH_ID_OUT));
 }
 
 void OnUnknownCommand(uint8_t type, uint16_t seq)
