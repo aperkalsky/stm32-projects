@@ -16,7 +16,9 @@
 typedef enum{
 	FLASH_OK,
 	FLASH_TIMEOUT,
-	FLASH_INVALID_ARGUMENT
+	FLASH_INVALID_ARGUMENT,
+	FLASH_HW_PROBLEM,
+	FLASH_BUSY
 }FlashStatus;
 
 // Exposed functions
@@ -71,5 +73,8 @@ FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length);
 
 #define FLASH_CMD_ENABLE_RESET				0x66
 #define FLASH_CMD_RESET_DEVICE				0x99
+
+// status register bits
+#define STATUS_WIP_BIT                0x01
 
 #endif
