@@ -79,7 +79,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 }
 
 
-FlashStatus Flash_Wait_Until_Ready_NonBlocking(uint32_t timeoutTicks, uint32_t pollDelayMs)
+FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollDelayMs)
 {
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
@@ -128,16 +128,15 @@ FlashStatus Flash_Wait_Until_Ready_NonBlocking(uint32_t timeoutTicks, uint32_t p
 	}
 }
 
-
 /**
  * @brief  Reads a block of data from the SPI Flash memory asynchronously.
  * @param  flashAddress: 24-bit physical start address in flash.
  * @param  pData: Pointer to the destination buffer where data will be stored.
- * @param  size: Number of bytes to read.
+ * @param  size: Number of bytes to read. Up to 64K
  * @param  timeoutMs: Maximum time allowed for the operation to complete.
  * @retval FlashStatus: OK on success, error code otherwise.
  */
-FlashStatus Flash_Read_NonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t size, uint32_t timeoutMs)
+FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t size, uint32_t timeoutMs)
 {
 	HAL_StatusTypeDef hal_status;
 	FlashStatus wait_status;
@@ -154,7 +153,7 @@ FlashStatus Flash_Read_NonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	uint32_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
 
 	// 3. Ensure the flash chip is not busy before starting a read
-	wait_status = Flash_Wait_Until_Ready_NonBlocking(timeoutTicks, 1);
+	wait_status = FlashWaitUntilReadyNonBlocking(timeoutTicks, 1);
 	if (wait_status != FLASH_OK)
 	{
 		return wait_status;
