@@ -259,6 +259,9 @@ uint32_t FlashReadID(void)
 FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
 {
 	uint32_t num_bytes_to_read;
+	uint32_t remaining_length = length;
+	FlashStatus status;
+	uint8_t* pBuf = (uint8_t*)buffer;
 
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (address + length > FLASH_SIZE))
@@ -266,20 +269,32 @@ FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
 		return FLASH_INVALID_ARGUMENT;
 	}
 
-	if(length <= FLASH_PAGE_SIZE)
-	{
-		num_bytes_to_read = length;
-	}
-	else
-	{
-		num_bytes_to_read = FLASH_PAGE_SIZE;
-	}
-
 	// read data in chunks of page size
-	while(num_bytes_to_read > 0)
+	while(remaining_length > 0)
 	{
+		if(remaining_length <= FLASH_PAGE_SIZE)
+		{
+			num_bytes_to_read = remaining_length;
+		}
+		else
+		{
+			num_bytes_to_read = FLASH_PAGE_SIZE;
+		}
 
+		status = FlashReadNonBlocking(address, pBuf, num_bytes_to_read, 200);
+
+		if(status != FLASH_OK)
+		{
+			return status;
+		}
+		else
+		{
+			remaining_length -= num_bytes_to_read;	// will become 0 after last chunk is read
+			pBuf = (uint8_t*)((uint32_t)pBuf + num_bytes_to_read);
+			address += num_bytes_to_read;
+		}
 	}
+
 	return FLASH_OK;
 }
 
