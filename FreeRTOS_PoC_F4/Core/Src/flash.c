@@ -3,6 +3,18 @@
  *
  * Flash driver for W25Q16 serial Flash
  *
+ *
+ * Driver Architecture
+ *
+ * [User App Thread] ──> Calls Flash_Write_NonBlocking()
+ *                           │
+ *                           ├── Loops through pages (Max 256 bytes)
+ *                           ├── Sends Page Program Command via IT or DMA
+ *                           ├── Takes Semaphore (Thread goes to sleep, CPU is free)
+ *                           │       ^
+ *[Hardware Interrupt] ──────┴───────┼─── Releases Semaphore when transfer finishes
+ *                                   │
+ *                      [Thread wakes up, loops to next page]
  */
 
 #include <stdint.h>
@@ -14,6 +26,8 @@ extern SPI_HandleTypeDef hspi1;
 
 uint8_t spiIoBuf[10];
 
+// FreeRTOS Binary Semaphore to signal SPI transfer completion
+static osSemaphoreId_t spiTxSemHandle;
 
 // internal functions
 // ==================
@@ -38,8 +52,26 @@ void SPI_Read(uint8_t *data, uint8_t len)
 	HAL_SPI_Receive(&hspi1, data, len, 5000);
 }
 
+// Callback triggered by HAL when the non-blocking transfer finishes
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance == SPI1)
+    {
+        // Wake up the waiting thread instantly
+        osSemaphoreRelease(spiTxSemHandle);
+    }
+}
+
+// =================
 // exposed functions
 // =================
+
+
+void FlashDriverInit(void)
+{
+    const osSemaphoreAttr_t sem_attributes = { .name = "spiTxSem" };
+    spiTxSemHandle = osSemaphoreNew(1, 0, &sem_attributes);
+}
 
 void FlashReset(void)
 {
@@ -59,4 +91,20 @@ uint32_t FlashReadID(void)
 	SPI_Read(spiIoBuf, 3);
 	FlashCsDeselect();
 	return ((spiIoBuf[0]<<16)|(spiIoBuf[1]<<8)|spiIoBuf[2]);
+}
+
+FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
+{
+	// argument validation
+	if((buffer == NULL) || (length == 0) || (address + length > FLASH_SIZE))
+	{
+		return FLASH_INVALID_ARGUMENT;
+	}
+
+	return FLASH_OK;
+}
+
+FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length)
+{
+	return FLASH_OK;
 }

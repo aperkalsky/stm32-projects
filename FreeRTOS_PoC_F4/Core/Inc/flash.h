@@ -8,8 +8,24 @@
 #ifndef _FLASH_H_
 #define _FLASH_H_
 
+#define FLASH_PAGE_SIZE      256
+#define	FLASH_SIZE           (uint32_t)(2*1024*1024)
+#define SPI_DMA_THRESHOLD    16	// if less than this, use interrupts for data transfer
+
+// Return statuses
+typedef enum{
+	FLASH_OK,
+	FLASH_TIMEOUT,
+	FLASH_INVALID_ARGUMENT
+}FlashStatus;
+
+// Exposed functions
+void FlashDriverInit(void);
 void FlashReset(void);
 uint32_t FlashReadID(void);
+
+FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length);
+FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length);
 
 // Flash commands
 #define FLASH_CMD_WRITE_ENABLE				0x06
