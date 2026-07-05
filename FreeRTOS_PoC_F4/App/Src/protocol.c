@@ -199,10 +199,10 @@ void OnCmdTest1(uint16_t seq)
 	uint32_t size = 256;
 	FlashTestRead(0x100, size, txPayload);
 
-	for(uint8_t i = 0; i < size; i++)
+/*	for(uint8_t i = 0; i < size; i++)
 	{
-//		SEGGER_RTT_printf(0, "data = %02X\r\n", txPayload[i]);
-	}
+		SEGGER_RTT_printf(0, "data = %02X\r\n", txPayload[i]);
+	} */
 
 	SendResponse(
 			CMD_TEST_1,
