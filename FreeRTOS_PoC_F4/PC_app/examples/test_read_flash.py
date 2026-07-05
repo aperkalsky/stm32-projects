@@ -10,7 +10,7 @@ dev = Device(SERIAL_PORT)
 
 def read_one_shot():
     address = 0x00001000
-    size = 255
+    size = FLASH_PAGE_SIZE
 
     result = dev.flash.read(address, size)
 
@@ -35,4 +35,5 @@ def read_entire_chip():
     out_file.close()
 
 if __name__ == "__main__":
-    read_entire_chip()
+#    read_entire_chip()
+    read_one_shot()

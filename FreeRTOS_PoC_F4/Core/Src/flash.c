@@ -21,6 +21,7 @@
 #include "cmsis_os.h"
 #include "flash.h"
 #include "main.h"
+#include "SEGGER_RTT.h"
 
 extern SPI_HandleTypeDef hspi1;
 
@@ -112,14 +113,17 @@ FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollD
 		rtos_status = osSemaphoreAcquire(spiIoSemHandle, 10);
 		if (rtos_status != osOK)
 		{
+			FlashCsDeselect();
 			return FLASH_TIMEOUT;
 		}
 
 		// 5. Inspect the received register byte (stored in spiRxBuf[1])
 		uint8_t statusRegister = spiRxBuf[1];
+		SEGGER_RTT_printf(0, "Flash stat = %02X\r\n", statusRegister);
 
 		if ((statusRegister & STATUS_WIP_BIT) == 0)
 		{
+			FlashCsDeselect();
 			return FLASH_OK; // Success: Flash is clean and ready!
 		}
 
@@ -232,7 +236,7 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 
 void FlashDriverInit(void)
 {
-	const osSemaphoreAttr_t sem_attributes = { .name = "spiTxSem" };
+	const osSemaphoreAttr_t sem_attributes = { .name = "spiIoSem" };
 	spiIoSemHandle = osSemaphoreNew(1, 0, &sem_attributes);
 }
 
@@ -263,6 +267,8 @@ FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
 	FlashStatus status;
 	uint8_t* pBuf = (uint8_t*)buffer;
 
+	SEGGER_RTT_printf(0, "FlashRead(%08X, %d)\r\n", address, length);
+
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (address + length > FLASH_SIZE))
 	{
@@ -282,6 +288,8 @@ FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
 		}
 
 		status = FlashReadNonBlocking(address, pBuf, num_bytes_to_read, 200);
+
+		SEGGER_RTT_printf(0, "Num bytes to read = %d result = %d \r\n", num_bytes_to_read, status);
 
 		if(status != FLASH_OK)
 		{

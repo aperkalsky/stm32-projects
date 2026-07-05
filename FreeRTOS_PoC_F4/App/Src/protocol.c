@@ -242,7 +242,7 @@ void Protocol_Process(void)
 		uint8_t byte =
 				gUsbRxRing[gUsbRxTail];
 
-		SEGGER_RTT_printf(0, "Byte %02X, h=%d t=%d s=%d\r\n", byte, gUsbRxHead, gUsbRxTail, rxState);
+//		SEGGER_RTT_printf(0, "Byte %02X, h=%d t=%d s=%d\r\n", byte, gUsbRxHead, gUsbRxTail, rxState);
 
 		gUsbRxTail =
 				(gUsbRxTail + 1) %
