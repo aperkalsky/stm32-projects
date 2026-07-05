@@ -194,6 +194,24 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	}
 }
 
+void OnCmdTest1(uint16_t seq)
+{
+	uint32_t size = 10;
+	FlashTestRead(0x100, size, txPayload);
+
+	for(uint8_t i = 0; i < size; i++)
+	{
+		SEGGER_RTT_printf(0, "data = %02X\r\n", txPayload[i]);
+	}
+
+	SendResponse(
+			CMD_TEST_1,
+			seq,
+			TLV_STAT_OK,
+			NULL,
+			0);
+}
+
 void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(
@@ -227,6 +245,10 @@ static void HandlePacket(
 
 	case CMD_READ_FLASH:
 		OnCmdReadFlash(seq, payload);
+		break;
+
+	case CMD_TEST_1:
+		OnCmdTest1(seq);
 		break;
 
 	default:

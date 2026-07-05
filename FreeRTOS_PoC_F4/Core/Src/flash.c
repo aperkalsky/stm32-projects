@@ -79,7 +79,6 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 	}
 }
 
-
 FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollDelayMs)
 {
 	HAL_StatusTypeDef hal_status;
@@ -310,3 +309,23 @@ FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 {
 	return FLASH_OK;
 }
+
+// blocking variant
+void FlashTestRead(uint32_t address, uint32_t size, uint8_t *buffer)
+{
+	uint8_t tData[5];
+
+	tData[0] = 0x03;  // enable Read
+	tData[1] = (address>>16)&0xFF;  // MSB of the memory Address
+	tData[2] = (address>>8)&0xFF;
+	tData[3] = (address)&0xFF; // LSB of the memory Address
+
+	FlashCsSelect();  // pull the CS Low
+
+	SPI_Write(tData, 4);  // send read instruction along with the 24 bit memory address
+
+	SPI_Read(buffer, size);  // Read the data
+
+	FlashCsDeselect();  // pull the CS High
+}
+

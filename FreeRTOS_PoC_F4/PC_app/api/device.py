@@ -2,6 +2,7 @@
 
 from api.firmware import FirmwareApi
 from api.flash import FlashApi
+from api.common import CommonApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
@@ -15,6 +16,7 @@ class Device:
 
         self.firmware = FirmwareApi(self)
         self.flash = FlashApi(self)
+        self.common = CommonApi(self)
 
         self._seq = 0
 

@@ -74,6 +74,12 @@
 #define CMD_GET_FLASH_ID		   0x02
 #define CMD_READ_FLASH         0x03
 #define CMD_WRITE_FLASH        0x04
+#define CMD_TEST_1             0x05
+#define CMD_TEST_2             0x06
+#define CMD_TEST_3             0x07
+#define CMD_TEST_4             0x08
+#define CMD_TEST_5             0x09
+
 
 // TLV response statuses
 #define TLV_STAT_OK         0x0000

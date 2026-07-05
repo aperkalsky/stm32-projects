@@ -25,6 +25,7 @@ typedef enum{
 void FlashDriverInit(void);
 void FlashReset(void);
 uint32_t FlashReadID(void);
+void FlashTestRead(uint32_t address, uint32_t size, uint8_t *buffer);
 
 FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length);
 FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length);
