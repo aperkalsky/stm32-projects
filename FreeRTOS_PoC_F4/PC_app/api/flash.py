@@ -4,6 +4,9 @@ from payloads.payload import GetFlashIdOut, ReadFlashOut, ReadFlashIn
 from protocol.commands import CMD_GET_FLASH_ID, CMD_READ_FLASH
 from protocol.status import TlvStatus
 
+FLASH_SIZE = 2*1024*1024
+FLASH_PAGE_SIZE = 256
+
 class FlashApi:
 
     def __init__(self, device):
