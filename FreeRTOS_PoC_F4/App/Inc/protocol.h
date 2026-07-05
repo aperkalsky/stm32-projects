@@ -97,7 +97,7 @@ typedef struct{
 
 typedef struct{
 	uint32_t address;
-	uint8_t size;
+	uint16_t size;	// because we can read up to 256 bytes (0x100)
 } READ_FLASH_IN;
 
 typedef struct{

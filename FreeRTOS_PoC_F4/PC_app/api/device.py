@@ -5,6 +5,8 @@ from api.flash import FlashApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
+SERIAL_PORT = "COM3"
+
 class Device:
 
     def __init__(self, port):

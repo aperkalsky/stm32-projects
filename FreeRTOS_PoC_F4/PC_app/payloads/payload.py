@@ -62,3 +62,24 @@ class GetFlashIdOut(SerializablePayload):
     def from_bytes(cls, payload):
         id = struct.unpack(cls.FORMAT, payload)
         return cls(id)
+
+@dataclass
+class ReadFlashIn(SerializablePayload):
+
+    FORMAT = "<IH"   # address:uint32, size:uint8
+
+    address: int
+    size: int
+
+    @classmethod
+    def pack(cls, address: int, size: int) -> bytes:
+        return struct.pack(cls.FORMAT, address, size)
+
+@dataclass
+class ReadFlashOut(SerializablePayload):
+
+    data: bytes
+
+    @classmethod
+    def from_bytes(cls, payload: bytes):
+        return cls(payload)

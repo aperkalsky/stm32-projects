@@ -156,6 +156,8 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	READ_FLASH_IN* pIn = (READ_FLASH_IN*)payload;
 	FlashStatus status;
 
+	SEGGER_RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
+
 	// input validation
 	if((pIn->size == 0) || (pIn->size > FLASH_PAGE_SIZE) || ((pIn->address + pIn->size) > FLASH_SIZE))
 	{
