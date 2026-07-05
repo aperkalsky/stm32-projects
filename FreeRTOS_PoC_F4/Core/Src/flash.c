@@ -27,8 +27,8 @@ extern SPI_HandleTypeDef hspi1;
 uint8_t spiIoBuf[10];
 uint8_t spiRxBuf[10];
 
-// FreeRTOS Binary Semaphore to signal SPI transfer completion
-static osSemaphoreId_t spiTxSemHandle;
+// FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
+static osSemaphoreId_t spiIoSemHandle;
 
 // internal functions
 // ==================
@@ -58,7 +58,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		osSemaphoreRelease(spiTxSemHandle);
+		osSemaphoreRelease(spiIoSemHandle);
 	}
 }
 
@@ -66,7 +66,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		osSemaphoreRelease(spiTxSemHandle);
+		osSemaphoreRelease(spiIoSemHandle);
 	}
 }
 
@@ -74,7 +74,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		osSemaphoreRelease(spiTxSemHandle);
+		osSemaphoreRelease(spiIoSemHandle);
 	}
 }
 
@@ -109,7 +109,7 @@ FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollD
 		}
 
 		// Sleep the thread until the SPI hardware finishes reading the byte. Delay in ms
-		rtos_status = osSemaphoreAcquire(spiTxSemHandle, 10);
+		rtos_status = osSemaphoreAcquire(spiIoSemHandle, 10);
 		if (rtos_status != osOK)
 		{
 			return FLASH_TIMEOUT;
@@ -179,7 +179,7 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 	}
 
 	// 6. Block thread until command transmission finishes
-	rtos_status = osSemaphoreAcquire(spiTxSemHandle, remainingTimeoutTicks);
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 	if (rtos_status != osOK)
 	{
 		FlashCsDeselect();
@@ -210,7 +210,7 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 	}
 
 	// 8. Block thread until data payload reception finishes
-	rtos_status = osSemaphoreAcquire(spiTxSemHandle, remainingTimeoutTicks);
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 
 	// 9. De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
@@ -233,7 +233,7 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 void FlashDriverInit(void)
 {
 	const osSemaphoreAttr_t sem_attributes = { .name = "spiTxSem" };
-	spiTxSemHandle = osSemaphoreNew(1, 0, &sem_attributes);
+	spiIoSemHandle = osSemaphoreNew(1, 0, &sem_attributes);
 }
 
 void FlashReset(void)
