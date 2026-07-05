@@ -320,6 +320,9 @@ void FlashTestRead(uint32_t address, uint32_t size, uint8_t *buffer)
 	tData[2] = (address>>8)&0xFF;
 	tData[3] = (address)&0xFF; // LSB of the memory Address
 
+
+	SEGGER_RTT_printf(0, "start = %d \r\n", osKernelGetTickCount());
+
 	FlashCsSelect();  // pull the CS Low
 
 	SPI_Write(tData, 4);  // send read instruction along with the 24 bit memory address
@@ -327,5 +330,7 @@ void FlashTestRead(uint32_t address, uint32_t size, uint8_t *buffer)
 	SPI_Read(buffer, size);  // Read the data
 
 	FlashCsDeselect();  // pull the CS High
+
+	SEGGER_RTT_printf(0, "end = %d \r\n", osKernelGetTickCount());
 }
 
