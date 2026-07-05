@@ -2,6 +2,7 @@
 #define PROTOCOL_H
 
 #include <stdint.h>
+#include "flash.h"
 
 /*
 						TLV Protocol Definitions
@@ -52,9 +53,6 @@
 #define TLV_TX_HEADER_SIZE (TLV_TYPE_SIZE + TLV_LENGTH_SIZE + TLV_SEQ_SIZE + TLV_STATUS_SIZE)
 #define TLV_TX_FOOTER_SIZE TLV_CRC_SIZE
 
-#define TLV_MAX_RX_PAYLOAD_SIZE 128
-#define TLV_MAX_TX_PAYLOAD_SIZE 128
-
 // buffers to send/receive data from/to USB stack
 // ----------------------------------------------
 
@@ -64,21 +62,25 @@
 // here we prepare formatted TLV response
 #define TX_RAW_PACKET_BUF_SIZE (TLV_TX_HEADER_SIZE + TLV_MAX_TX_PAYLOAD_SIZE + TLV_TX_FOOTER_SIZE)
 
-// TODO: find smart way to adjust it to the *RAW_PACKET_BUF_SIZE
-#define CRC_CALC_BUF_SIZE 128       // in 4-byte words
-//#define MAX_PAYLOAD     256
-//#define TLV_CRC_SIZE   4
+// The buffer size for CRC calculation is in 4-byte words. We need to relate its size to the size
+// of TX buffer payload (it's longer than Rx) plus header size. Add extra word to compensate the
+// division remainder
+#define CRC_CALC_BUF_SIZE (((TLV_MAX_TX_PAYLOAD_SIZE + TLV_TX_HEADER_SIZE) / 4) + 1)
 #define USB_TX_BUSY_WAIT_TIMEOUT_MS  100
 
 // TLV commands
 // ============
 #define CMD_GET_FW_VERSION     0x01
 #define CMD_GET_FLASH_ID		   0x02
+#define CMD_READ_FLASH         0x03
+#define CMD_WRITE_FLASH        0x04
 
 // TLV response statuses
 #define TLV_STAT_OK         0x0000
 #define TLV_STAT_TIMEOUT    0x0001
 #define TLV_STAT_NOT_IMPLEMENTED	0x0002
+#define TLV_STAT_INVALID_ARGUMENT 0X0003
+#define TLV_STAT_FAILURE		0x0004
 
 // Data structures
 
@@ -93,8 +95,28 @@ typedef struct{
 	uint32_t id;
 } GET_FLASH_ID_OUT;
 
+typedef struct{
+	uint32_t address;
+	uint8_t size;
+} READ_FLASH_IN;
+
+typedef struct{
+	uint8_t data[FLASH_PAGE_SIZE];
+} READ_FLASH_OUT;
+
+typedef struct{
+	uint32_t address;
+	uint8_t size;
+	uint8_t data[FLASH_PAGE_SIZE];
+} WRITE_FLASH_IN;
+
 #pragma pack(pop)
 
+// buffer sizes depend on the commands
+#define TLV_MAX_RX_PAYLOAD_SIZE (sizeof(WRITE_FLASH_IN))	// fit Flash page buffer size
+#define TLV_MAX_TX_PAYLOAD_SIZE (sizeof(READ_FLASH_OUT))
+
+// exported functions
 void Protocol_Process(void);
 
 #endif

@@ -151,6 +151,47 @@ void OnCmdGetFlashID(uint16_t seq)
 			sizeof(GET_FLASH_ID_OUT));
 }
 
+void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
+{
+	READ_FLASH_IN* pIn = (READ_FLASH_IN*)payload;
+	FlashStatus status;
+
+	// input validation
+	if((pIn->size == 0) || (pIn->size > FLASH_PAGE_SIZE) || ((pIn->address + pIn->size) > FLASH_SIZE))
+	{
+		SendResponse(
+				CMD_READ_FLASH,
+				seq,
+				TLV_STAT_INVALID_ARGUMENT,
+				NULL,
+				0);
+	}
+
+	// try to read data
+	status = FlashRead(pIn->address, (void*)txPayload, pIn->size);
+
+	if(status == FLASH_OK)
+	{
+		SendResponse(
+				CMD_READ_FLASH,
+				seq,
+				TLV_STAT_OK,
+				txPayload,
+				sizeof(READ_FLASH_OUT));
+	}
+	else
+	{
+		SEGGER_RTT_printf(0, "Flash read failed. Status = %d\r\n", status);
+
+		SendResponse(
+				CMD_READ_FLASH,
+				seq,
+				TLV_STAT_FAILURE,
+				NULL,
+				0);
+	}
+}
+
 void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(
@@ -180,6 +221,10 @@ static void HandlePacket(
 
 	case CMD_GET_FLASH_ID:
 		OnCmdGetFlashID(seq);
+		break;
+
+	case CMD_READ_FLASH:
+		OnCmdReadFlash(seq, payload);
 		break;
 
 	default:
