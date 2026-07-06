@@ -18,6 +18,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include "cmsis_os.h"
 #include "flash.h"
 #include "main.h"
@@ -30,6 +31,10 @@ uint8_t spiRxBuf[10];
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
 static osSemaphoreId_t spiIoSemHandle;
+
+static uint32_t txCnt = 0;
+static uint32_t rxCnt = 0;
+static uint32_t txrxCnt = 0;
 
 // internal functions
 // ==================
@@ -60,6 +65,8 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 	if (hspi->Instance == SPI1)
 	{
 		osSemaphoreRelease(spiIoSemHandle);
+		txCnt += 1;
+		SEGGER_RTT_WriteString(0, "Tx cplt\r\n");
 	}
 }
 
@@ -68,6 +75,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 	if (hspi->Instance == SPI1)
 	{
 		osSemaphoreRelease(spiIoSemHandle);
+		rxCnt += 1;
+		SEGGER_RTT_WriteString(0, "Rx cplt\r\n");
 	}
 }
 
@@ -76,6 +85,8 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 	if (hspi->Instance == SPI1)
 	{
 		osSemaphoreRelease(spiIoSemHandle);
+		txrxCnt += 1;
+		SEGGER_RTT_WriteString(0, "TxRx cplt\r\n");
 	}
 }
 
@@ -145,6 +156,10 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 	FlashStatus wait_status;
 	osStatus_t rtos_status;
 
+	static uint8_t dummyTx[FLASH_PAGE_SIZE];
+
+	memset(dummyTx, 0x00, size);
+
 	// 1. Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
 	spiIoBuf[0] = FLASH_CMD_READ_DATA;
 	spiIoBuf[1] = (flashAddress >> 16) & 0xFF;
@@ -169,9 +184,12 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 		return FLASH_TIMEOUT;
 	}
 	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
+	SEGGER_RTT_printf(0, "RTT1 = %d\r\n", remainingTimeoutTicks);
 
 	// 4. Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
+	SEGGER_RTT_printf(0, "cs = %d \r\n", DWT->CYCCNT);
+
 
 	// 5. Send the 4-byte command packet using non-blocking Interrupt mode
 	hal_status = HAL_SPI_Transmit_IT(&hspi1, spiIoBuf, 4);
@@ -181,6 +199,9 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 		return FLASH_HW_PROBLEM;
 	}
 
+	SEGGER_RTT_printf(0, "xmt done = %d \r\n", DWT->CYCCNT);
+
+
 	// 6. Block thread until command transmission finishes
 	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 	if (rtos_status != osOK)
@@ -188,6 +209,9 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 		FlashCsDeselect();
 		return FLASH_TIMEOUT;
 	}
+
+	SEGGER_RTT_printf(0, "xmt after sem = %d \r\n", DWT->CYCCNT);
+
 
 	// Recalculate remaining timeout for the actual data phase
 	elapsedTime = osKernelGetTickCount() - startTime;
@@ -197,13 +221,17 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 		return FLASH_TIMEOUT;
 	}
 	remainingTimeoutTicks = timeoutTicks - elapsedTime;
+	SEGGER_RTT_printf(0, "bef xmt rcv = %d \r\n", DWT->CYCCNT);
+
 
 	// 7. Receive data payload using optimal peripheral strategy
 	if (size >= SPI_DMA_THRESHOLD)
 	{
-		hal_status = HAL_SPI_Receive_DMA(&hspi1, pData, size);
-	} else {
-		hal_status = HAL_SPI_Receive_IT(&hspi1, pData, size);
+	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, dummyTx, pData, size);
+	}
+	else
+	{
+	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, dummyTx, pData, size);
 	}
 
 	if (hal_status != HAL_OK)
@@ -211,12 +239,19 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 		FlashCsDeselect();
 		return FLASH_HW_PROBLEM;
 	}
+	SEGGER_RTT_printf(0, "bef xmt rcv sem = %d \r\n", DWT->CYCCNT);
 
 	// 8. Block thread until data payload reception finishes
 	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 
+	SEGGER_RTT_printf(0, "after xmt rcv sem = %d \r\n", DWT->CYCCNT);
+
+
 	// 9. De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
+
+	SEGGER_RTT_printf(0, "cs off = %d \r\n", DWT->CYCCNT);
+
 
 	if (rtos_status != osOK)
 	{
@@ -321,7 +356,7 @@ void FlashTestRead(uint32_t address, uint32_t size, uint8_t *buffer)
 	tData[3] = (address)&0xFF; // LSB of the memory Address
 
 
-	SEGGER_RTT_printf(0, "start = %d \r\n", osKernelGetTickCount());
+	SEGGER_RTT_printf(0, "tr start = %d \r\n", DWT->CYCCNT);
 
 	FlashCsSelect();  // pull the CS Low
 
@@ -331,6 +366,6 @@ void FlashTestRead(uint32_t address, uint32_t size, uint8_t *buffer)
 
 	FlashCsDeselect();  // pull the CS High
 
-	SEGGER_RTT_printf(0, "end = %d \r\n", osKernelGetTickCount());
+	SEGGER_RTT_printf(0, "tr end = %d \r\n", DWT->CYCCNT);
 }
 

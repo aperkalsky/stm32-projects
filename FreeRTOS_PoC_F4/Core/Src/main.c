@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stm32f4xx_hal.h"	// for DWT
 #include "SEGGER_RTT.h"
 #include "usb_task.h"
 #include "flash.h"
@@ -87,6 +88,20 @@ void StartUsbTask(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void DWT_Init(void) {
+    // 1. Enable the Core Debug architecture (needed to use DWT)
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+
+    // 2. Unlock the DWT registers (required on some Cortex-M4 cores)
+//    DWT->LAR = 0xC5ACCE55; // none on F4
+
+    // 3. Reset the cycle counter register to 0
+    DWT->CYCCNT = 0;
+
+    // 4. Enable the cycle counter control bit
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -113,7 +128,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  DWT_Init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */

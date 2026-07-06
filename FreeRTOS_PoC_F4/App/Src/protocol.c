@@ -154,7 +154,7 @@ void OnCmdGetFlashID(uint16_t seq)
 void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 {
 	READ_FLASH_IN* pIn = (READ_FLASH_IN*)payload;
-	FlashStatus status;
+	FlashStatus status = FLASH_OK;
 
 	SEGGER_RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
 
@@ -171,6 +171,8 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 
 	// try to read data
 	status = FlashRead(pIn->address, (void*)txPayload, pIn->size);
+//	FlashTestRead(0x100, pIn->size, txPayload);
+
 
 	if(status == FLASH_OK)
 	{
@@ -196,13 +198,10 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 
 void OnCmdTest1(uint16_t seq)
 {
-	uint32_t size = 256;
+	uint32_t size = 5;
 	FlashTestRead(0x100, size, txPayload);
 
-/*	for(uint8_t i = 0; i < size; i++)
-	{
-		SEGGER_RTT_printf(0, "data = %02X\r\n", txPayload[i]);
-	} */
+	SEGGER_RTT_printf(0, "First byte = %02X\r\n", txPayload[0]);
 
 	SendResponse(
 			CMD_TEST_1,

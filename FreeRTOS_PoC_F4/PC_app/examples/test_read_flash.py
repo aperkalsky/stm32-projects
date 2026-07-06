@@ -9,8 +9,10 @@ from api.flash import FLASH_SIZE, FLASH_PAGE_SIZE
 dev = Device(SERIAL_PORT)
 
 def read_one_shot():
-    address = 0x00001000
-    size = FLASH_PAGE_SIZE
+    address = 0x00000100
+#    address = 0
+#    size = FLASH_PAGE_SIZE
+    size = 5
 
     result = dev.flash.read(address, size)
 
