@@ -170,8 +170,8 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	}
 
 	// try to read data
-	status = FlashRead(pIn->address, (void*)txPayload, pIn->size);
-//	FlashTestRead(0x100, pIn->size, txPayload);
+//	status = FlashRead(pIn->address, (void*)txPayload, pIn->size);
+	FlashTestRead(pIn->address, pIn->size, txPayload);
 
 
 	if(status == FLASH_OK)

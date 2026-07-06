@@ -9,10 +9,10 @@ from api.flash import FLASH_SIZE, FLASH_PAGE_SIZE
 dev = Device(SERIAL_PORT)
 
 def read_one_shot():
-    address = 0x00000100
-#    address = 0
+#    address = 0x00000100
+    address = 256
 #    size = FLASH_PAGE_SIZE
-    size = 5
+    size = 128
 
     result = dev.flash.read(address, size)
 
@@ -36,6 +36,21 @@ def read_entire_chip():
 
     out_file.close()
 
+def read_entire_chip_in_chunks_of_128():
+    chunk_size = int(FLASH_PAGE_SIZE / 2)
+
+    # Using 'with' automatically closes the file when the block finishes
+    with open("flash_contents_128.bin", "wb") as out_file:
+        for addr in range(0, FLASH_SIZE, chunk_size):
+            result = dev.flash.read(addr, chunk_size)
+            if result is not None:
+                print(f"Read from {addr} OK")
+                out_file.write(result.data)
+            else:
+                print(f"Read from {addr} failed")
+
 if __name__ == "__main__":
 #    read_entire_chip()
-    read_one_shot()
+#    read_one_shot()
+    read_entire_chip_in_chunks_of_128()
+
