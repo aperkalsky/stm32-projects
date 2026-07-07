@@ -353,7 +353,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    SEGGER_RTT_WriteString(0, "Toggle LEDs\r\n");
+//    SEGGER_RTT_WriteString(0, "Toggle LEDs\r\n");
 
     // switch LEDs
   	if(HAL_GPIO_ReadPin(GPIOB, LED_D2_Pin) != GPIO_PIN_SET)

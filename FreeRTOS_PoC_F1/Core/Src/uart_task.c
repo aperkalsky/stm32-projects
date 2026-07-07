@@ -9,25 +9,10 @@
 
 void UartTask_Run(void *argument)
 {
-	char cmd;
-
-	for (;;)
-	{
-		ulTaskNotifyTake(
-				pdTRUE,
-				portMAX_DELAY);
-
-		if (UartDriver_GetChar(&cmd))
-		{
-			const char *response;
-
-			SEGGER_RTT_printf(0, "> %c\r\n", cmd);
-
-			response = Protocol_Process(cmd);
-
-			UartDriver_SendString(response);
-
-			SEGGER_RTT_printf(0, "< %s\r\n", response);
-		}
-	}
+    for (;;)
+    {
+//        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        Protocol_Process();
+    		osDelay(1);
+    }
 }
