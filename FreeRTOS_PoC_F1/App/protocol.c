@@ -142,7 +142,14 @@ void Protocol_Process(void)
 
 	while (UartDriver_GetByte(&byte))
 	{
-//		SEGGER_RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
+		SEGGER_RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
+
+		// work around the problem with Prolific USB to Serial that sends 0x00 upon USB connect
+		// rewind the raw packet index, dropping this byte
+		if((rxState == RX_TYPE) && (byte == 0))
+		{
+			continue;
+		}
 
 		if (packetRawIndex < sizeof(packetRaw))
 		{
@@ -152,12 +159,9 @@ void Protocol_Process(void)
 		switch(rxState)
 		{
 		case RX_TYPE:
-			if(byte != 0) // work around the problem with Prolific USB to Serial that sends 0x00 upon USB connect
-			{
-				packetType = byte;
-				packetLength = 0;
-				rxState = RX_LEN_LO;
-			}
+			packetType = byte;
+			packetLength = 0;
+			rxState = RX_LEN_LO;
 			break;
 
 		case RX_LEN_LO:
