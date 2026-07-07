@@ -80,7 +80,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     if (huart->Instance == USART1)
     {
-        SEGGER_RTT_printf(0, "> %02X\r\n", rxByte);
+//        SEGGER_RTT_printf(0, "> %02X\r\n", rxByte);
 
         uint16_t nextHead = (rxHead + 1) % UART_RX_RING_SIZE;
         if (nextHead != rxTail)

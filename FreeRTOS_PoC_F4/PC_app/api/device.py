@@ -25,6 +25,7 @@ class Device:
         request = TlvRequest(cmd, self._seq, payload)
         self._seq += 1
 
+        print(request)
         self.transport.send(build_request(request))
         response_raw = self.transport.receive()
 #        print(response_raw)
