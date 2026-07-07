@@ -142,12 +142,7 @@ void Protocol_Process(void)
 
 	while (UartDriver_GetByte(&byte))
 	{
-		SEGGER_RTT_printf(0, "byte=%02X \r\n", byte);
-	}
-
-/*
-	while (UartDriver_GetByte(&byte))
-		SEGGER_RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
+//		SEGGER_RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
 
 		if (packetRawIndex < sizeof(packetRaw))
 		{
@@ -220,5 +215,5 @@ void Protocol_Process(void)
 			}
 			break;
 		}
-	} */
+	}
 }

@@ -45,8 +45,6 @@ def build_request(req: TlvRequest) -> bytes:
 
     crc = stm32_crc32(hdr + payload)
 
-    print(hdr + payload + struct.pack("<I", crc))
-
     return hdr + payload + struct.pack("<I", crc)
 
 def parse_response(raw: bytes) -> TlvResponse:
