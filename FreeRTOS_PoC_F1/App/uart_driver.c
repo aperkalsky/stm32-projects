@@ -23,6 +23,13 @@ extern TaskHandle_t uartTaskHandle;
 
 UartDriverStatus_t UartDriver_Init(void)
 {
+	// Clear any pending status by reading SR then DR. Just in case
+	volatile uint32_t tmp;
+
+	tmp = USART1->SR;
+	tmp = USART1->DR;
+	(void)tmp;
+
 	txDoneSem = xSemaphoreCreateBinary();
 
 	if (txDoneSem == NULL)
@@ -53,7 +60,7 @@ bool UartDriver_GetChar(char *ch)
 
 	*ch = receivedChar;
 
-	//  SEGGER_RTT_printf(0, "Got %c\r\n", *ch);
+	SEGGER_RTT_printf(0, "Got %c\r\n", *ch);
 
 	charReady = false;
 
