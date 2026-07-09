@@ -1,6 +1,6 @@
 import sys
 import os
-from sysconfig import __main__
+import time
 
 # Adds the parent directory (PC_app) to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,9 +15,10 @@ def read_version_single():
 def read_version_in_loop():
     dev = Device(SERIAL_PORT)
 
-    for i in range(1000):
+    for i in range(10000):
         result = dev.firmware.get_version()
         print(f"i = {i} maj = {result.major} min = {result.minor}")
+        time.sleep(0.05)
 
     print("Done")
 
