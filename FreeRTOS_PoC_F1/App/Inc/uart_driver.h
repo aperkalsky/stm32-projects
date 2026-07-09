@@ -19,7 +19,7 @@ UartDriverStatus_t UartDriver_Init(void);
 bool UartDriver_GetChar(char *ch);
 bool UartDriver_GetByte(uint8_t *byte);
 
-void UartDriver_SendBuffer(const uint8_t *buf, uint16_t len);
+bool UartDriver_SendBuffer(const uint8_t *buf, uint16_t len);
 void UartDriver_SendString(const char *str);
 
 #endif

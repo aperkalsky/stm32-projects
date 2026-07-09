@@ -97,7 +97,6 @@ static void SendResponse(
 	memcpy(&tx[pos], &crc, sizeof(crc));
 	pos += TLV_CRC_SIZE;
 
-	SEGGER_RTT_printf(0, "TX TLV len=%lu\r\n", (unsigned long)pos);
 	UartTransmit(tx, pos);
 }
 
@@ -218,8 +217,6 @@ void Protocol_Process(void)
 
 				memcpy(&rxCrc, crcBytes, TLV_CRC_SIZE);
 				calcCrc = CalcCrc32(packetRaw, packetRawIndex - TLV_CRC_SIZE);
-
-				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
 
 				if (rxCrc == calcCrc)
 				{

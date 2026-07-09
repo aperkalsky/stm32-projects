@@ -11,8 +11,7 @@ void UartTask_Run(void *argument)
 {
     for (;;)
     {
-//        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         Protocol_Process();
-    		osDelay(1);
     }
 }
