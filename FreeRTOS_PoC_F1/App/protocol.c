@@ -31,6 +31,16 @@ static uint8_t packetRaw[RX_RAW_PACKET_BUF_SIZE];
 static uint32_t packetRawIndex;
 static uint8_t tx[TX_RAW_PACKET_BUF_SIZE];
 
+static void ResetRxState(void)
+{
+	rxState = RX_TYPE;
+	packetLength = 0;
+	packetSeq = 0;
+	rxPayloadIndex = 0;
+	rxCrcIndex = 0;
+	packetRawIndex = 0;
+}
+
 static uint32_t CalcCrc32(const uint8_t *data, uint32_t len)
 {
 	uint32_t crc = 0xFFFFFFFFu;
@@ -154,6 +164,11 @@ void Protocol_Process(void)
 		{
 			packetRaw[packetRawIndex++] = byte;
 		}
+		else
+		{
+			ResetRxState();
+			continue;
+		}
 
 		switch(rxState)
 		{
@@ -221,6 +236,10 @@ void Protocol_Process(void)
 				if (rxCrc == calcCrc)
 				{
 					HandlePacket(packetType, packetSeq, rxPayload, packetLength);
+				}
+				else
+				{
+					ResetRxState();
 				}
 
 				rxState = RX_TYPE;

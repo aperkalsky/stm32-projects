@@ -24,7 +24,8 @@ static volatile uint16_t rxTail = 0;
 static uint8_t txRing[UART_TX_RING_SIZE];
 static volatile uint16_t txHead = 0;
 static volatile uint16_t txTail = 0;
-static volatile uint16_t txCount = 0;
+static volatile uint16_t txPending = 0;
+static volatile uint16_t txInFlight = 0;
 static volatile bool txBusy = false;
 
 SemaphoreHandle_t txDoneSem;
@@ -76,51 +77,55 @@ bool UartDriver_GetByte(uint8_t *byte)
 static void UartDriver_StartTx(void)
 {
     uint16_t chunk = 0;
+    uint16_t startTail = txTail;
 
-    if (txBusy || (txCount == 0))
+    if (txBusy || (txPending == 0))
     {
         return;
     }
 
-    chunk = txCount;
+    chunk = txPending;
     if (chunk > (UART_TX_RING_SIZE - txTail))
     {
         chunk = UART_TX_RING_SIZE - txTail;
     }
 
     txBusy = true;
-    HAL_UART_Transmit_DMA(&huart1, &txRing[txTail], chunk);
+    txInFlight = chunk;
     txTail = (txTail + chunk) % UART_TX_RING_SIZE;
-    txCount -= chunk;
+    HAL_UART_Transmit_DMA(&huart1, &txRing[startTail], chunk);
 }
 
 bool UartDriver_SendBuffer(const uint8_t *buf, uint16_t len)
 {
     uint16_t i;
 
-    taskENTER_CRITICAL();
-
-    if (len > (UART_TX_RING_SIZE - txCount - 1))
+    while (1)
     {
+        taskENTER_CRITICAL();
+
+        if (len <= (UART_TX_RING_SIZE - txPending - 1))
+        {
+            for (i = 0; i < len; ++i)
+            {
+                txRing[txHead] = buf[i];
+                txHead = (txHead + 1) % UART_TX_RING_SIZE;
+                txPending++;
+            }
+
+            taskEXIT_CRITICAL();
+
+            if (!txBusy)
+            {
+                UartDriver_StartTx();
+            }
+
+            return true;
+        }
+
         taskEXIT_CRITICAL();
-        return false;
+        taskYIELD();
     }
-
-    for (i = 0; i < len; ++i)
-    {
-        txRing[txHead] = buf[i];
-        txHead = (txHead + 1) % UART_TX_RING_SIZE;
-        txCount++;
-    }
-
-    taskEXIT_CRITICAL();
-
-    if (!txBusy)
-    {
-        UartDriver_StartTx();
-    }
-
-    return true;
 }
 
 void UartDriver_SendString(const char *str)
@@ -134,12 +139,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     if (huart->Instance == USART1)
     {
+        UBaseType_t irqMask = taskENTER_CRITICAL_FROM_ISR();
         uint16_t nextHead = (rxHead + 1) % UART_RX_RING_SIZE;
         if (nextHead != rxTail)
         {
             rxRing[rxHead] = rxByte;
             rxHead = nextHead;
         }
+        taskEXIT_CRITICAL_FROM_ISR(irqMask);
 
         vTaskNotifyGiveFromISR(uartTaskHandle, &xHigherPriorityTaskWoken);
 
@@ -155,9 +162,16 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
     if (huart->Instance == USART1)
     {
-        txBusy = false;
+        UBaseType_t irqMask = taskENTER_CRITICAL_FROM_ISR();
+        if (txBusy)
+        {
+            txPending -= txInFlight;
+            txInFlight = 0;
+            txBusy = false;
+        }
+        taskEXIT_CRITICAL_FROM_ISR(irqMask);
 
-        if (txCount != 0)
+        if (txPending != 0)
         {
             UartDriver_StartTx();
         }
