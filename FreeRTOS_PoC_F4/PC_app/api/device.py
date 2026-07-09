@@ -6,7 +6,7 @@ from api.common import CommonApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
-SERIAL_PORT = "COM3"
+SERIAL_PORT = "COM5"
 
 class Device:
 

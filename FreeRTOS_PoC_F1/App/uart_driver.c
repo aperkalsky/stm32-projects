@@ -5,6 +5,7 @@
 
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include "task.h"
 
 #include "SEGGER_RTT.h"
 
@@ -12,10 +13,19 @@
 
 extern UART_HandleTypeDef huart1;
 
-static uint8_t rxByte;
+#define UART_RX_RING_SIZE 1024
+#define UART_TX_RING_SIZE 512
 
-static char receivedChar;
-static volatile bool charReady = false;
+static uint8_t rxByte;
+static uint8_t rxRing[UART_RX_RING_SIZE];
+static volatile uint16_t rxHead = 0;
+static volatile uint16_t rxTail = 0;
+
+static uint8_t txRing[UART_TX_RING_SIZE];
+static volatile uint16_t txHead = 0;
+static volatile uint16_t txTail = 0;
+static volatile uint16_t txCount = 0;
+static volatile bool txBusy = false;
 
 SemaphoreHandle_t txDoneSem;
 
@@ -23,97 +33,136 @@ extern TaskHandle_t uartTaskHandle;
 
 UartDriverStatus_t UartDriver_Init(void)
 {
-	// Clear any pending status by reading SR then DR. Just in case
-	volatile uint32_t tmp;
+    txDoneSem = xSemaphoreCreateBinary();
 
-	tmp = USART1->SR;
-	tmp = USART1->DR;
-	(void)tmp;
+    if (txDoneSem == NULL)
+    {
+        return UART_DRV_SEM_CREATE_FAILED;
+    }
 
-	txDoneSem = xSemaphoreCreateBinary();
+    switch(HAL_UART_Receive_IT(&huart1, &rxByte, 1))
+    {
+    case HAL_OK:
+        return UART_DRV_OK;
 
-	if (txDoneSem == NULL)
-	{
-		return UART_DRV_SEM_CREATE_FAILED;
-	}
+    case HAL_BUSY:
+        return UART_DRV_HAL_BUSY;
 
-	switch(HAL_UART_Receive_IT(&huart1,	&rxByte, 1))
-	{
-	case HAL_OK:
-		return UART_DRV_OK;
+    case HAL_ERROR:
+        return UART_DRV_HAL_ERROR;
 
-	case HAL_BUSY:
-		return UART_DRV_HAL_BUSY;
-
-	case HAL_ERROR:
-		return UART_DRV_HAL_ERROR;
-
-	default:
-		return UART_DRV_HAL_ERROR;
-	}
+    default:
+        return UART_DRV_HAL_ERROR;
+    }
 }
 
-bool UartDriver_GetChar(char *ch)
+bool UartDriver_GetByte(uint8_t *byte)
 {
-	if(!charReady)
-		return false;
+    taskENTER_CRITICAL();
 
-	*ch = receivedChar;
+    if (rxHead == rxTail)
+    {
+        taskEXIT_CRITICAL();
+        return false;
+    }
 
-	SEGGER_RTT_printf(0, "Got %c\r\n", *ch);
+    *byte = rxRing[rxTail];
+    rxTail = (rxTail + 1) % UART_RX_RING_SIZE;
 
-	charReady = false;
+    taskEXIT_CRITICAL();
+    return true;
+}
 
-	return true;
+static void UartDriver_StartTx(void)
+{
+    uint16_t chunk = 0;
+
+    if (txBusy || (txCount == 0))
+    {
+        return;
+    }
+
+    chunk = txCount;
+    if (chunk > (UART_TX_RING_SIZE - txTail))
+    {
+        chunk = UART_TX_RING_SIZE - txTail;
+    }
+
+    txBusy = true;
+    HAL_UART_Transmit_DMA(&huart1, &txRing[txTail], chunk);
+    txTail = (txTail + chunk) % UART_TX_RING_SIZE;
+    txCount -= chunk;
+}
+
+bool UartDriver_SendBuffer(const uint8_t *buf, uint16_t len)
+{
+    uint16_t i;
+
+    taskENTER_CRITICAL();
+
+    if (len > (UART_TX_RING_SIZE - txCount - 1))
+    {
+        taskEXIT_CRITICAL();
+        return false;
+    }
+
+    for (i = 0; i < len; ++i)
+    {
+        txRing[txHead] = buf[i];
+        txHead = (txHead + 1) % UART_TX_RING_SIZE;
+        txCount++;
+    }
+
+    taskEXIT_CRITICAL();
+
+    if (!txBusy)
+    {
+        UartDriver_StartTx();
+    }
+
+    return true;
 }
 
 void UartDriver_SendString(const char *str)
 {
-	HAL_UART_Transmit_DMA(
-			&huart1,
-			(uint8_t*)str,
-			strlen(str));
-
-	xSemaphoreTake(
-			txDoneSem,
-			portMAX_DELAY);
+    (void)UartDriver_SendBuffer((const uint8_t *)str, strlen(str));
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	if(huart->Instance == USART1)
-	{
-		receivedChar = rxByte;
+    if (huart->Instance == USART1)
+    {
+        uint16_t nextHead = (rxHead + 1) % UART_RX_RING_SIZE;
+        if (nextHead != rxTail)
+        {
+            rxRing[rxHead] = rxByte;
+            rxHead = nextHead;
+        }
 
-		charReady = true;
+        vTaskNotifyGiveFromISR(uartTaskHandle, &xHigherPriorityTaskWoken);
 
-		vTaskNotifyGiveFromISR(
-				uartTaskHandle,
-				&xHigherPriorityTaskWoken);
+        HAL_UART_Receive_IT(&huart1, &rxByte, 1);
 
-		HAL_UART_Receive_IT(
-				&huart1,
-				&rxByte,
-				1);
-
-		portYIELD_FROM_ISR(
-				xHigherPriorityTaskWoken);
-	}
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	if(huart->Instance == USART1)
-	{
-		xSemaphoreGiveFromISR(
-				txDoneSem,
-				&xHigherPriorityTaskWoken);
+    if (huart->Instance == USART1)
+    {
+        txBusy = false;
 
-		portYIELD_FROM_ISR(
-				xHigherPriorityTaskWoken);
-	}
+        if (txCount != 0)
+        {
+            UartDriver_StartTx();
+        }
+
+        xSemaphoreGiveFromISR(txDoneSem, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
 }
