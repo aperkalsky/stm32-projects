@@ -13,8 +13,8 @@
 
 extern UART_HandleTypeDef huart1;
 
-#define UART_RX_RING_SIZE 1024
-#define UART_TX_RING_SIZE 512
+#define UART_RX_RING_SIZE 128
+#define UART_TX_RING_SIZE 128
 
 static uint8_t rxByte;
 static uint8_t rxRing[UART_RX_RING_SIZE];
