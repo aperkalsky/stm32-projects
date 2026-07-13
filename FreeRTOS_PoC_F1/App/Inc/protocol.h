@@ -39,6 +39,12 @@ typedef struct
 #define RX_RAW_PACKET_BUF_SIZE (TLV_RX_HEADER_SIZE + TLV_MAX_RX_PAYLOAD_SIZE + TLV_RX_FOOTER_SIZE)
 #define TX_RAW_PACKET_BUF_SIZE (TLV_TX_HEADER_SIZE + TLV_MAX_TX_PAYLOAD_SIZE + TLV_TX_FOOTER_SIZE)
 
+// The buffer size for CRC calculation is in 4-byte words. We need to relate its size to the size
+// of TX buffer payload (it's longer than Rx) plus header size. Add extra word to compensate the
+// division remainder
+#define CRC_CALC_BUF_SIZE (((TLV_MAX_TX_PAYLOAD_SIZE + TLV_TX_HEADER_SIZE) / 4) + 1)
+
+
 void Protocol_Process(void);
 
 #endif

@@ -1,4 +1,6 @@
 #include "protocol.h"
+#include "cmsis_os.h"
+#include "main.h"
 #include "uart_driver.h"
 #include "SEGGER_RTT.h"
 #include <string.h>
@@ -13,6 +15,8 @@ typedef enum
 	RX_PAYLOAD,
 	RX_CRC
 } RxState_t;
+
+extern CRC_HandleTypeDef hcrc;
 
 static RxState_t rxState = RX_TYPE;
 
@@ -31,6 +35,9 @@ static uint8_t packetRaw[RX_RAW_PACKET_BUF_SIZE];
 static uint32_t packetRawIndex;
 static uint8_t tx[TX_RAW_PACKET_BUF_SIZE];
 
+static uint32_t words[CRC_CALC_BUF_SIZE]; // buffer for crc32 calculation
+
+
 static void ResetRxState(void)
 {
 	rxState = RX_TYPE;
@@ -43,36 +50,20 @@ static void ResetRxState(void)
 
 static uint32_t CalcCrc32(const uint8_t *data, uint32_t len)
 {
-	uint32_t crc = 0xFFFFFFFFu;
+	uint32_t wordCount;
 
-	for (uint32_t offset = 0; offset < len; offset += 4)
-	{
-		uint32_t word = 0;
+	memset(words, 0, sizeof(words));
 
-		for (uint32_t i = 0; i < 4; ++i)
-		{
-			if ((offset + i) < len)
-			{
-				word |= ((uint32_t)data[offset + i]) << (8u * i);
-			}
-		}
+	memcpy(words, data, len);
 
-		crc ^= word;
+	wordCount = (len + 3) / 4;
 
-		for (uint32_t bit = 0; bit < 32; ++bit)
-		{
-			if (crc & 0x80000000u)
-			{
-				crc = ((crc << 1) ^ 0x04C11DB7u) & 0xFFFFFFFFu;
-			}
-			else
-			{
-				crc = (crc << 1) & 0xFFFFFFFFu;
-			}
-		}
-	}
+	__HAL_CRC_DR_RESET(&hcrc);
 
-	return crc;
+	return HAL_CRC_Calculate(
+			&hcrc,
+			words,
+			wordCount);
 }
 
 static void UartTransmit(uint8_t *buf, uint16_t len)

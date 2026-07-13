@@ -19,13 +19,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include "uart_driver.h"
-#include "uart_task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "SEGGER_RTT.h"
+#include "uart_driver.h"
+#include "uart_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +44,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CRC_HandleTypeDef hcrc;
+
 RTC_HandleTypeDef hrtc;
 
 UART_HandleTypeDef huart1;
@@ -61,7 +63,7 @@ osThreadId_t uartTaskHandle;
 const osThreadAttr_t uartTask_attributes = {
   .name = "uartTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal1,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 
@@ -73,6 +75,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_RTC_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_CRC_Init(void);
 void StartDefaultTask(void *argument);
 void StartUartTask(void *argument);
 
@@ -117,6 +120,7 @@ int main(void)
   MX_DMA_Init();
   MX_RTC_Init();
   MX_USART1_UART_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   if(UartDriver_Init() != UART_DRV_OK)
   {
@@ -217,6 +221,32 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
 }
 
 /**
@@ -385,7 +415,7 @@ void StartUartTask(void *argument)
 {
   /* USER CODE BEGIN StartUartTask */
 	UartTask_Run(argument);
-	/* USER CODE END StartUartTask */
+  /* USER CODE END StartUartTask */
 }
 
 /**
