@@ -18,7 +18,7 @@ def read_version_in_loop():
     for i in range(10000):
         result = dev.firmware.get_version()
         print(f"i = {i} maj = {result.major} min = {result.minor}")
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     print("Done")
 
