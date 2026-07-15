@@ -2,15 +2,12 @@ import sys
 import os
 import time
 
-# Adds the parent directory (PC_app) to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Adds the parent directory (PC_app) to the Python path (two levels up)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from api.device import Device
 
-# select the appropriate config module, depending on your board
-# -------------------------------------------------------------
 from config.F1_config import SERIAL_PORT, BAUD_RATE
-#from config.F4_config import SERIAL_PORT, BAUD_RATE
 
 def read_version_single():
     dev = Device(SERIAL_PORT, BAUD_RATE)

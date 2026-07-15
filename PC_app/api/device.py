@@ -6,13 +6,11 @@ from api.common import CommonApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
-SERIAL_PORT = "COM5"
-
 class Device:
 
-    def __init__(self, port):
+    def __init__(self, port, baud_rate):
 
-        self.transport = CdcTransport(port)
+        self.transport = CdcTransport(port, baud_rate)
 
         self.firmware = FirmwareApi(self)
         self.flash = FlashApi(self)

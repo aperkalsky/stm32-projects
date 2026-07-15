@@ -6,10 +6,11 @@ import serial
 from protocol.crc import stm32_crc32
 from protocol.tlv import TLV_TX_HEADER_SIZE
 
+
 class CdcTransport:
 
-    def __init__(self, port):
-        self.ser = serial.Serial(port, 115200)
+    def __init__(self, port, baud_rate):
+        self.ser = serial.Serial(port, baud_rate)
 
     def __del__(self):
         if hasattr(self, 'ser') and self.ser and self.ser.is_open:
