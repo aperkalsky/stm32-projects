@@ -71,7 +71,7 @@
 // TLV commands
 // ============
 #define CMD_GET_FW_VERSION     0x01
-#define CMD_GET_FLASH_ID		   0x02
+#define CMD_GET_FLASH_ID       0x02
 #define CMD_READ_FLASH         0x03
 #define CMD_WRITE_FLASH        0x04
 #define CMD_TEST_1             0x05

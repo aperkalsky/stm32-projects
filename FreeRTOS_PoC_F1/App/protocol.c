@@ -4,6 +4,7 @@
 #include "uart_driver.h"
 #include "SEGGER_RTT.h"
 #include <string.h>
+#include "pwm_led.h"
 
 typedef enum
 {
@@ -115,6 +116,15 @@ static void OnCmdGetFwVersion(uint16_t seq)
 			sizeof(GET_FW_VERSION_OUT));
 }
 
+static void OnCmdPwmLedCtl(uint16_t seq, uint8_t *payload)
+{
+	PWM_LED_CTL_IN* pParam = (PWM_LED_CTL_IN*)payload;
+
+	TLV_STATUS ret = PWM_LED_SetMode(pParam->mode, pParam->param);
+
+	SendResponse(CMD_PWM_LED_CTL, seq, ret, NULL, 0);
+}
+
 static void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(type, seq, TLV_STAT_NOT_IMPLEMENTED, NULL, 0);
@@ -128,6 +138,10 @@ static void HandlePacket(uint8_t type, uint16_t seq, uint8_t *payload, uint16_t 
 	{
 	case CMD_GET_FW_VERSION:
 		OnCmdGetFwVersion(seq);
+		break;
+
+	case CMD_PWM_LED_CTL:
+		OnCmdPwmLedCtl(seq, payload);
 		break;
 
 	default:
