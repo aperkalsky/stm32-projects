@@ -26,6 +26,7 @@
 #include "SEGGER_RTT.h"
 #include "uart_driver.h"
 #include "uart_task.h"
+#include "pwm_led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -134,7 +135,7 @@ int main(void)
   	Error_Handler();
   }
 
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  PWM_LED_Init();
 
   SEGGER_RTT_WriteString(0, "Hello from F1 board!\r\n");
   /* USER CODE END 2 */
@@ -545,6 +546,11 @@ void StartUartTask(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
+	if (htim->Instance == TIM4)
+	{
+		PWM_LED_DoBreathe();
+		return;
+	}
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM2)

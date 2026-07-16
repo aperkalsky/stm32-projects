@@ -6,7 +6,7 @@ import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from api.device import Device
-from api.pwm_led import MODE_MANUAL
+from api.pwm_led import MODE_MANUAL, MODE_AUTO
 from config.F1_config import SERIAL_PORT, BAUD_RATE
 
 def set_brightness():
@@ -35,9 +35,15 @@ def imitate_breathe():
             dev.pwm.pwm_led_control(MODE_MANUAL, i)
             time.sleep(delay_between_steps)
 
+def request_breathe():
+    dev = Device(SERIAL_PORT, BAUD_RATE)
+    status = dev.pwm.pwm_led_control(MODE_AUTO, 10)
+    print(f"Status = {status}")
+
 def main():
 #    set_brightness()
-    imitate_breathe()
+#    imitate_breathe()
+    request_breathe()
 
 if __name__ == "__main__":
     main()
