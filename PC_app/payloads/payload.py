@@ -66,7 +66,7 @@ class GetFlashIdOut(SerializablePayload):
 @dataclass
 class ReadFlashIn(SerializablePayload):
 
-    FORMAT = "<IH"   # address:uint32, size:uint8
+    FORMAT = "<IH"   # address:uint32, size:uint16
 
     address: int
     size: int
@@ -83,3 +83,15 @@ class ReadFlashOut(SerializablePayload):
     @classmethod
     def from_bytes(cls, payload: bytes):
         return cls(payload)
+
+@dataclass
+class PwmLedCtlIn(SerializablePayload):
+
+    FORMAT = "<BH"   # mode: uint8, param:uint16
+
+    address: int
+    size: int
+
+    @classmethod
+    def pack(cls, mode: int, param: int) -> bytes:
+        return struct.pack(cls.FORMAT, mode, param)

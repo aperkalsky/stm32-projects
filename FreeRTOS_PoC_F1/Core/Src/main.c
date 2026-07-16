@@ -459,13 +459,11 @@ void StartDefaultTask(void *argument)
   	{
   	  HAL_GPIO_WritePin(GPIOB, LED_D2_Pin, GPIO_PIN_SET);
   	  HAL_GPIO_WritePin(GPIOB, LED_D3_Pin, GPIO_PIN_RESET);
-  	  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
   	}
   	else
   	{
   	  HAL_GPIO_WritePin(GPIOB, LED_D2_Pin, GPIO_PIN_RESET);
   	  HAL_GPIO_WritePin(GPIOB, LED_D3_Pin, GPIO_PIN_SET);
-  	  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 999);
   	}
 
   vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));

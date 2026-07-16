@@ -54,10 +54,14 @@ def parse_response(raw: bytes) -> TlvResponse:
         raw[:TLV_TX_HEADER_SIZE]
     )
 
+#    print(f"cmd: {cmd}, length: {length}, seq: {seq}, status: {status}")
+
     payload = None
 
     if length > 0:
         payload = raw[TLV_TX_HEADER_SIZE:TLV_TX_HEADER_SIZE + length]
+    else:
+        payload = b''
 
     return TlvResponse(
         cmd=cmd,

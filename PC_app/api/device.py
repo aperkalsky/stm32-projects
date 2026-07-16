@@ -3,6 +3,7 @@
 from api.firmware import FirmwareApi
 from api.flash import FlashApi
 from api.common import CommonApi
+from api.pwm_led import PwmLedApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
@@ -15,6 +16,7 @@ class Device:
         self.firmware = FirmwareApi(self)
         self.flash = FlashApi(self)
         self.common = CommonApi(self)
+        self.pwm = PwmLedApi(self)
 
         self._seq = 0
 
@@ -25,5 +27,5 @@ class Device:
 
         self.transport.send(build_request(request))
         response_raw = self.transport.receive()
-#        print(response_raw)
+#        for byte in response_raw: print(" %02X " % byte)
         return  parse_response(response_raw)
