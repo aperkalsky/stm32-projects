@@ -1,10 +1,11 @@
+#include <string.h>
 #include "protocol.h"
 #include "cmsis_os.h"
 #include "main.h"
 #include "uart_driver.h"
 #include "SEGGER_RTT.h"
-#include <string.h>
 #include "pwm_led.h"
+#include "adc.h"
 
 typedef enum
 {
@@ -125,6 +126,34 @@ static void OnCmdPwmLedCtl(uint16_t seq, uint8_t *payload)
 	SendResponse(CMD_PWM_LED_CTL, seq, ret, NULL, 0);
 }
 
+static void OnCmdGetTemperature(uint16_t seq)
+{
+	GET_TEMPERATURE_OUT* pOut = (GET_TEMPERATURE_OUT*)txPayload;
+
+	ADC_STATUS status = ADC_GetCpuTemperaturePolling(&pOut->temperature);
+
+	if(status == TLV_STAT_OK)
+	{
+		SendResponse(
+				CMD_GET_TEMPERATURE,
+				seq,
+				TLV_STAT_OK,
+				txPayload,
+				sizeof(GET_TEMPERATURE_OUT));
+	}
+	else
+	{
+		SEGGER_RTT_printf(0, "Get temr failed. Status = %d\r\n", status);
+
+		SendResponse(
+				CMD_GET_TEMPERATURE,
+				seq,
+				TLV_STAT_FAILURE,
+				NULL,
+				0);
+	}
+}
+
 static void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(type, seq, TLV_STAT_NOT_IMPLEMENTED, NULL, 0);
@@ -142,6 +171,10 @@ static void HandlePacket(uint8_t type, uint16_t seq, uint8_t *payload, uint16_t 
 
 	case CMD_PWM_LED_CTL:
 		OnCmdPwmLedCtl(seq, payload);
+		break;
+
+	case CMD_GET_TEMPERATURE:
+		OnCmdGetTemperature(seq);
 		break;
 
 	default:

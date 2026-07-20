@@ -19,6 +19,11 @@ typedef struct
 	uint16_t param;
 }PWM_LED_CTL_IN;
 
+typedef struct{
+	int32_t temperature;
+} GET_TEMPERATURE_OUT;
+
+
 #pragma pack(pop)
 
 #define TLV_MAX_RX_PAYLOAD_SIZE 64

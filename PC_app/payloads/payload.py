@@ -95,3 +95,15 @@ class PwmLedCtlIn(SerializablePayload):
     @classmethod
     def pack(cls, mode: int, param: int) -> bytes:
         return struct.pack(cls.FORMAT, mode, param)
+
+@dataclass
+class GetTemperatureOut(SerializablePayload):
+
+    FORMAT = "<i"   # temperature: int32_t
+
+    temperature: int
+
+    @classmethod
+    def from_bytes(cls, payload):
+        temperature = struct.unpack(cls.FORMAT, payload)
+        return cls(temperature)

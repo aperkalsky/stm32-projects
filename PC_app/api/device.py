@@ -4,6 +4,7 @@ from api.firmware import FirmwareApi
 from api.flash import FlashApi
 from api.common import CommonApi
 from api.pwm_led import PwmLedApi
+from api.adc import AdcApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
@@ -17,6 +18,7 @@ class Device:
         self.flash = FlashApi(self)
         self.common = CommonApi(self)
         self.pwm = PwmLedApi(self)
+        self.adc = AdcApi(self)
 
         self._seq = 0
 

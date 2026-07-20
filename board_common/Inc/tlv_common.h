@@ -60,6 +60,7 @@
 #define CMD_TEST_4             0x08
 #define CMD_TEST_5             0x09
 #define CMD_PWM_LED_CTL        0x0A
+#define CMD_GET_TEMPERATURE    0x0B
 
 
 // TLV response statuses
