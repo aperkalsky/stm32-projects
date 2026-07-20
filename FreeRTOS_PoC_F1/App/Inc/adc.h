@@ -10,6 +10,7 @@ typedef uint8_t ADC_STATUS;
 #define ADC_STATUS_TIMEOUT	2
 
 ADC_STATUS ADC_GetCpuTemperaturePolling(int32_t* pData);
+ADC_STATUS ADC_GetCpuTemperature(int32_t* pData);
 
 
 #endif /* _ADC_H_ */

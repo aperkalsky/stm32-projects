@@ -130,7 +130,8 @@ static void OnCmdGetTemperature(uint16_t seq)
 {
 	GET_TEMPERATURE_OUT* pOut = (GET_TEMPERATURE_OUT*)txPayload;
 
-	ADC_STATUS status = ADC_GetCpuTemperaturePolling(&pOut->temperature);
+//	ADC_STATUS status = ADC_GetCpuTemperaturePolling(&pOut->temperature);
+	ADC_STATUS status = ADC_GetCpuTemperature(&pOut->temperature);
 
 	if(status == TLV_STAT_OK)
 	{
@@ -143,7 +144,7 @@ static void OnCmdGetTemperature(uint16_t seq)
 	}
 	else
 	{
-		SEGGER_RTT_printf(0, "Get temr failed. Status = %d\r\n", status);
+		SEGGER_RTT_printf(0, "Get tempr failed. Status = %d\r\n", status);
 
 		SendResponse(
 				CMD_GET_TEMPERATURE,
