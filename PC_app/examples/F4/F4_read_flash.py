@@ -4,10 +4,11 @@ import os
 # Adds the parent directory (PC_app) to the Python path (two levels up)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from api.device import Device, SERIAL_PORT
+from api.device import Device
+from config.F4_config import SERIAL_PORT, BAUD_RATE
 from api.flash import FLASH_SIZE, FLASH_PAGE_SIZE
 
-dev = Device(SERIAL_PORT)
+dev = Device(SERIAL_PORT, BAUD_RATE)
 
 def read_one_shot():
 #    address = 0x00000100
