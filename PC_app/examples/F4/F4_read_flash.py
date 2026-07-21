@@ -1,7 +1,8 @@
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Adds the parent directory (PC_app) to the Python path (two levels up)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from api.device import Device, SERIAL_PORT
 from api.flash import FLASH_SIZE, FLASH_PAGE_SIZE
