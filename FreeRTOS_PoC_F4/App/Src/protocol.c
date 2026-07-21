@@ -112,7 +112,7 @@ static uint8_t SendResponse(
 	memcpy(&tx[pos], &crc, sizeof(crc));
 	pos += TLV_CRC_SIZE;
 
-	SEGGER_RTT_printf(0, "Xmitting %d bytes\r\n", pos);
+//	SEGGER_RTT_printf(0, "Xmitting %d bytes\r\n", pos);
 
 	return UsbTransmit(tx, pos);
 }
@@ -156,7 +156,7 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	READ_FLASH_IN* pIn = (READ_FLASH_IN*)payload;
 	FlashStatus status = FLASH_OK;
 
-	SEGGER_RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
+//	SEGGER_RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
 
 	// input validation
 	if((pIn->size == 0) || (pIn->size > FLASH_PAGE_SIZE) || ((pIn->address + pIn->size) > FLASH_SIZE))
@@ -170,8 +170,8 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	}
 
 	// try to read data
-//	status = FlashRead(pIn->address, (void*)txPayload, pIn->size);
-	FlashTestRead(pIn->address, pIn->size, txPayload);
+	status = FlashRead(pIn->address, (void*)txPayload, pIn->size);
+//	FlashTestRead(pIn->address, pIn->size, txPayload);
 
 
 	if(status == FLASH_OK)
@@ -199,7 +199,7 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 void OnCmdTest1(uint16_t seq)
 {
 	uint32_t size = 5;
-	FlashTestRead(0x100, size, txPayload);
+	FlashReadBlocking(0x100, size, txPayload);
 
 	SEGGER_RTT_printf(0, "First byte = %02X\r\n", txPayload[0]);
 
@@ -230,7 +230,7 @@ static void HandlePacket(
 		uint8_t *payload,
 		uint16_t len)
 {
-	SEGGER_RTT_printf(0, "type = %d\r\n");
+//	SEGGER_RTT_printf(0, "type = %d\r\n");
 
 	switch(type)
 	{
@@ -343,7 +343,7 @@ void Protocol_Process(void)
 								packetRaw,
 								packetRawIndex - TLV_CRC_SIZE);
 
-				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
+//				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
 
 				if(rxCrc == calcCrc)
 				{

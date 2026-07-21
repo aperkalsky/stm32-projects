@@ -265,14 +265,14 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-	SEGGER_RTT_printf(0, "CDC got %d bytes\r\n", *Len);
+//	SEGGER_RTT_printf(0, "CDC got %d bytes\r\n", *Len);
 
 	for(uint32_t i = 0; i < *Len; i++)
 	{
 		gUsbRxRing[gUsbRxHead] =
 				Buf[i];
 
-		SEGGER_RTT_printf(0, "%02X ", Buf[i]);
+//		SEGGER_RTT_printf(0, "%02X ", Buf[i]);
 
 
 		gUsbRxHead =
@@ -280,7 +280,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				sizeof(gUsbRxRing);
 	}
 
-	SEGGER_RTT_WriteString(0, "\r\n");
+//	SEGGER_RTT_WriteString(0, "\r\n");
 
 	USBD_CDC_ReceivePacket(
 			&hUsbDeviceFS);
