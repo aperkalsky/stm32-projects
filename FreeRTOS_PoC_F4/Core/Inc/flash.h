@@ -14,21 +14,27 @@
 
 // Return statuses
 typedef enum{
-	FLASH_OK,
+	FLASH_OK = 0,
 	FLASH_TIMEOUT,
 	FLASH_INVALID_ARGUMENT,
 	FLASH_HW_PROBLEM,
 	FLASH_BUSY
-}FlashStatus;
+}FlashStatus_t;
 
 // Exposed functions
+// =================
+
+//		-- blocking
+
 void FlashDriverInit(void);
 void FlashReset(void);
 uint32_t FlashReadID(void);
 void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer);
 
-FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length);
-FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length);
+//		-- non-blocking
+FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length);
+FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length);
+FlashStatus_t FlashChipErase(void);
 
 // Flash commands
 #define FLASH_CMD_WRITE_ENABLE				0x06
@@ -77,5 +83,9 @@ FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length);
 
 // status register bits
 #define STATUS_WIP_BIT                0x01
+
+// timing parameters
+#define FLASH_CHIP_ERASE_TIMEOUT_MS				30000
+#define FLASH_CHIP_ERASE_POLL_INTERVAL_MS	1000
 
 #endif

@@ -9,7 +9,7 @@ extern ADC_HandleTypeDef hadc1;
 static TaskHandle_t adcWaitingTask = NULL;
 
 static volatile uint32_t adcRawValue;
-static volatile ADC_STATUS adcStatus;
+static volatile AdcStatus_t adcStatus;
 
 int32_t ADC_ReadingToTemperature(uint32_t reading)
 {
@@ -67,7 +67,7 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 }
 
 // works in blocking mode (CPU is blocked)
-ADC_STATUS ADC_GetCpuTemperaturePolling(int32_t* pData)
+AdcStatus_t ADC_GetCpuTemperaturePolling(int32_t* pData)
 {
 	if(HAL_ADC_Start(&hadc1) != HAL_OK)
 	{
@@ -88,7 +88,7 @@ ADC_STATUS ADC_GetCpuTemperaturePolling(int32_t* pData)
 }
 
 // works in non-blocking mode (CPU is not blocked, only the calling task)
-ADC_STATUS ADC_GetCpuTemperature(int32_t *pData)
+AdcStatus_t ADC_GetCpuTemperature(int32_t *pData)
 {
 	adcWaitingTask = xTaskGetCurrentTaskHandle();
 	adcStatus = ADC_STATUS_FAILURE;

@@ -154,7 +154,7 @@ void OnCmdGetFlashID(uint16_t seq)
 void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 {
 	READ_FLASH_IN* pIn = (READ_FLASH_IN*)payload;
-	FlashStatus status = FLASH_OK;
+	FlashStatus_t status = FLASH_OK;
 
 //	SEGGER_RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
 
@@ -198,10 +198,9 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 
 void OnCmdTest1(uint16_t seq)
 {
-	uint32_t size = 5;
-	FlashReadBlocking(0x100, size, txPayload);
+	FlashStatus_t ret = FlashChipErase();
 
-	SEGGER_RTT_printf(0, "First byte = %02X\r\n", txPayload[0]);
+	SEGGER_RTT_printf(0, "Erase status = %d\r\n", ret);
 
 	SendResponse(
 			CMD_TEST_1,

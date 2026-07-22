@@ -131,7 +131,7 @@ static void OnCmdGetTemperature(uint16_t seq)
 	GET_TEMPERATURE_OUT* pOut = (GET_TEMPERATURE_OUT*)txPayload;
 
 //	ADC_STATUS status = ADC_GetCpuTemperaturePolling(&pOut->temperature);
-	ADC_STATUS status = ADC_GetCpuTemperature(&pOut->temperature);
+	AdcStatus_t status = ADC_GetCpuTemperature(&pOut->temperature);
 
 	if(status == TLV_STAT_OK)
 	{

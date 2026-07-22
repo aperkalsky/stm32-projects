@@ -3,14 +3,15 @@
 
 #include <stdint.h>
 
-typedef uint8_t ADC_STATUS;
+typedef enum
+{
+	ADC_STATUS_OK = 0,
+	ADC_STATUS_FAILURE,
+	ADC_STATUS_TIMEOUT
+}AdcStatus_t;
 
-#define ADC_STATUS_OK				0
-#define ADC_STATUS_FAILURE	1
-#define ADC_STATUS_TIMEOUT	2
-
-ADC_STATUS ADC_GetCpuTemperaturePolling(int32_t* pData);
-ADC_STATUS ADC_GetCpuTemperature(int32_t* pData);
+AdcStatus_t ADC_GetCpuTemperaturePolling(int32_t* pData);
+AdcStatus_t ADC_GetCpuTemperature(int32_t* pData);
 
 
 #endif /* _ADC_H_ */

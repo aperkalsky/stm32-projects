@@ -90,7 +90,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 	}
 }
 
-FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollDelayMs)
+FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollDelayMs)
 {
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
@@ -129,9 +129,9 @@ FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollD
 			return FLASH_TIMEOUT;
 		}
 
-		// 5. Inspect the received register byte (stored in statusRxBuf[1])
+		// Inspect the received register byte (stored in statusRxBuf[1])
 		uint8_t statusRegister = statusRxBuf[1];
-//		SEGGER_RTT_printf(0, "Flash stat = %02X\r\n", statusRegister);
+		SEGGER_RTT_printf(0, "Flash stat = %02X\r\n", statusRegister);
 
 		if ((statusRegister & STATUS_WIP_BIT) == 0)
 		{
@@ -139,7 +139,7 @@ FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollD
 			return FLASH_OK; // Success: Flash is clean and ready!
 		}
 
-		// 6. Flash is busy. Sleep based on operation type to save CPU power.
+		// Flash is busy. Sleep based on operation type to save CPU power.
 		osDelay(pollDelayMs);
 	}
 }
@@ -152,10 +152,10 @@ FlashStatus FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollD
  * @param  timeoutMs: Maximum time allowed for the operation to complete.
  * @retval FlashStatus: OK on success, error code otherwise.
  */
-FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t size, uint32_t timeoutMs)
+FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t size, uint32_t timeoutMs)
 {
 	HAL_StatusTypeDef hal_status;
-	FlashStatus wait_status;
+	FlashStatus_t wait_status;
 	osStatus_t rtos_status;
 
 	static uint8_t dummyTx[FLASH_PAGE_SIZE];
@@ -265,10 +265,25 @@ FlashStatus FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t
 	}
 }
 
+void FlashWriteEnable(void)
+{
+	spiCmdBuf[0] = FLASH_CMD_WRITE_ENABLE;
+	FlashCsSelect();
+	SPI_Write(spiCmdBuf, 1);
+	FlashCsDeselect();
+}
+
+void FlashWriteDisable(void)
+{
+	spiCmdBuf[0] = FLASH_CMD_WRITE_DISABLE;
+	FlashCsSelect();
+	SPI_Write(spiCmdBuf, 1);
+	FlashCsDeselect();
+}
+
 // =================
 // exposed functions
 // =================
-
 
 void FlashDriverInit(void)
 {
@@ -296,11 +311,11 @@ uint32_t FlashReadID(void)
 	return ((spiCmdBuf[0]<<16)|(spiCmdBuf[1]<<8)|spiCmdBuf[2]);
 }
 
-FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
+FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 {
 	uint32_t num_bytes_to_read;
 	uint32_t remaining_length = length;
-	FlashStatus status;
+	FlashStatus_t status;
 	uint8_t* pBuf = (uint8_t*)buffer;
 
 //	SEGGER_RTT_printf(0, "FlashRead(%08X, %d)\r\n", address, length);
@@ -342,7 +357,7 @@ FlashStatus FlashRead(uint32_t address, void *buffer, uint32_t length)
 	return FLASH_OK;
 }
 
-FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length)
+FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 {
 	return FLASH_OK;
 }
@@ -350,24 +365,40 @@ FlashStatus FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 // blocking variant
 void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer)
 {
-	uint8_t tData[5];
-
-	tData[0] = FLASH_CMD_READ_DATA;  // enable Read
-	tData[1] = (address>>16)&0xFF;  // MSB of the memory Address
-	tData[2] = (address>>8)&0xFF;
-	tData[3] = (address)&0xFF; // LSB of the memory Address
-
-
-//	SEGGER_RTT_printf(0, "tr start = %d \r\n", DWT->CYCCNT);
+	spiCmdBuf[0] = FLASH_CMD_READ_DATA;  // enable Read
+	spiCmdBuf[1] = (address>>16)&0xFF;  // MSB of the memory Address
+	spiCmdBuf[2] = (address>>8)&0xFF;
+	spiCmdBuf[3] = (address)&0xFF; // LSB of the memory Address
 
 	FlashCsSelect();  // pull the CS Low
 
-	SPI_Write(tData, 4);  // send read instruction along with the 24 bit memory address
+	SPI_Write(spiCmdBuf, 4);  // send read instruction along with the 24 bit memory address
 
 	SPI_Read(buffer, size);  // Read the data
 
 	FlashCsDeselect();  // pull the CS High
-
-//	SEGGER_RTT_printf(0, "tr end = %d \r\n", DWT->CYCCNT);
 }
 
+// typical erase time is 5 sec, max time - 25 sec
+FlashStatus_t FlashChipErase(void)
+{
+	FlashStatus_t wait_status;
+	uint32_t timeoutTicks = pdMS_TO_TICKS(FLASH_CHIP_ERASE_TIMEOUT_MS);
+
+	// open the chip
+	FlashWriteEnable();
+
+	// send erase command
+	spiCmdBuf[0] = FLASH_CMD_CHIP_ERASE;
+	FlashCsSelect();
+	SPI_Write(spiCmdBuf, 1);
+	FlashCsDeselect();
+
+	// wait for completion
+	wait_status = FlashWaitUntilReadyNonBlocking(timeoutTicks, FLASH_CHIP_ERASE_POLL_INTERVAL_MS);
+
+	// close the chip in any case
+	FlashWriteDisable();
+
+	return wait_status;
+}
