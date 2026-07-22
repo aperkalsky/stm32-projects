@@ -26,7 +26,7 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-uint8_t spiCmdBuf[10];
+static uint8_t spiCmdBuf[10];
 //uint8_t spiRxBuf[10];
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
