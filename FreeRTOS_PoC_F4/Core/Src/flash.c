@@ -155,7 +155,7 @@ FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pol
 FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t size, uint32_t timeoutMs)
 {
 	HAL_StatusTypeDef hal_status;
-	FlashStatus_t wait_status;
+//	FlashStatus_t wait_status;
 	osStatus_t rtos_status;
 
 	static uint8_t dummyTx[FLASH_PAGE_SIZE];
@@ -169,28 +169,12 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	spiCmdBuf[3] =  flashAddress        & 0xFF;
 
 	// 2. Track total elapsed time using RTOS ticks
-	uint32_t startTime = osKernelGetTickCount();
 	uint32_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
+	uint32_t startTime = osKernelGetTickCount();
 
-	// 3. Ensure the flash chip is not busy before starting a read
-	wait_status = FlashWaitUntilReadyNonBlocking(timeoutTicks, 1);
-	if (wait_status != FLASH_OK)
-	{
-		return wait_status;
-	}
-
-	// Recalculate remaining timeout after waiting for busy state
-	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
-	if (elapsedTime >= timeoutTicks)
-	{
-		return FLASH_TIMEOUT;
-	}
-	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
-//	SEGGER_RTT_printf(0, "RTT1 = %d\r\n", remainingTimeoutTicks);
 
 	// 4. Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
-//	SEGGER_RTT_printf(0, "cs = %d \r\n", DWT->CYCCNT);
 
 
 	// 5. Send the 4-byte command packet using non-blocking Interrupt mode
@@ -201,29 +185,24 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 		return FLASH_HW_PROBLEM;
 	}
 
-//	SEGGER_RTT_printf(0, "xmt done = %d \r\n", DWT->CYCCNT);
-
 
 	// 6. Block thread until command transmission finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, timeoutTicks);
 	if (rtos_status != osOK)
 	{
 		FlashCsDeselect();
 		return FLASH_TIMEOUT;
 	}
 
-//	SEGGER_RTT_printf(0, "xmt after sem = %d \r\n", DWT->CYCCNT);
-
 
 	// Recalculate remaining timeout for the actual data phase
-	elapsedTime = osKernelGetTickCount() - startTime;
+	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
 	if (elapsedTime >= timeoutTicks)
 	{
 		FlashCsDeselect();
 		return FLASH_TIMEOUT;
 	}
-	remainingTimeoutTicks = timeoutTicks - elapsedTime;
-//	SEGGER_RTT_printf(0, "bef xmt rcv = %d \r\n", DWT->CYCCNT);
+	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
 
 
 	// 7. Receive data payload using optimal peripheral strategy
@@ -241,19 +220,13 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 		FlashCsDeselect();
 		return FLASH_HW_PROBLEM;
 	}
-//	SEGGER_RTT_printf(0, "bef xmt rcv sem = %d \r\n", DWT->CYCCNT);
 
 	// 8. Block thread until data payload reception finishes
 	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 
-//	SEGGER_RTT_printf(0, "after xmt rcv sem = %d \r\n", DWT->CYCCNT);
-
 
 	// 9. De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
-
-//	SEGGER_RTT_printf(0, "cs off = %d \r\n", DWT->CYCCNT);
-
 
 	if (rtos_status != osOK)
 	{
@@ -279,6 +252,28 @@ void FlashWriteDisable(void)
 	FlashCsSelect();
 	SPI_Write(spiCmdBuf, 1);
 	FlashCsDeselect();
+}
+
+// Programs one page in non-blocking mode
+FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
+{
+	// argument validation
+	if((buffer == NULL) || (length == 0) || (length > FLASH_PAGE_SIZE) ||(address + length > FLASH_SIZE))
+	{
+		return FLASH_INVALID_ARGUMENT;
+	}
+
+	if((address & LSB_ADDRESS_MASK) > FLASH_PAGE_SIZE)
+	{
+		return FLASH_INVALID_ARGUMENT;
+	}
+
+
+	if(!buffer || (length > FLASH_PAGE_SIZE))
+	{
+		return FLASH_INVALID_ARGUMENT;
+	}
+
 }
 
 // =================
