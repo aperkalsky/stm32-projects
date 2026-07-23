@@ -12,9 +12,8 @@ dev = Device(SERIAL_PORT, BAUD_RATE)
 
 def read_one_shot():
 #    address = 0x00000100
-    address = 256
-#    size = FLASH_PAGE_SIZE
-    size = 128
+    address = 0
+    size = FLASH_PAGE_SIZE
 
     result = dev.flash.read(address, size)
 
@@ -53,6 +52,6 @@ def read_entire_chip_in_chunks_of_128():
 
 if __name__ == "__main__":
 #    read_entire_chip()
-#    read_one_shot()
-    read_entire_chip_in_chunks_of_128()
+    read_one_shot()
+#    read_entire_chip_in_chunks_of_128()
 

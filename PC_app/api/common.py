@@ -1,6 +1,6 @@
 # common (general-purpose) API
 
-from protocol.commands import CMD_TEST_1
+from protocol.commands import CMD_TEST_1, CMD_TEST_2
 from protocol.status import TlvStatus
 
 class CommonApi:
@@ -10,6 +10,14 @@ class CommonApi:
 
     def test1(self):
         response = self.device.execute(CMD_TEST_1, b'')
+
+        if response.status == TlvStatus.OK:
+            return True
+        else:
+            return False
+
+    def test2(self):
+        response = self.device.execute(CMD_TEST_2, b'')
 
         if response.status == TlvStatus.OK:
             return True

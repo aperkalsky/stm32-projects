@@ -9,9 +9,12 @@
 #define _FLASH_H_
 
 #define FLASH_PAGE_SIZE      256
+#define FLASH_SECTOR_SIZE_4K	4096
 #define	FLASH_SIZE           (uint32_t)(2*1024*1024)
 #define SPI_DMA_THRESHOLD    16	// if less than this, use interrupts for data transfer
 #define LSB_ADDRESS_MASK		 (uint32_t)0x000000FF
+
+#define PAGE_PROGRAM_TIMEOUT_MS	5
 
 // Return statuses
 typedef enum{
@@ -35,8 +38,8 @@ void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer);
 //		-- non-blocking
 FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length);
 FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length);
-FlashStatus_t FlashChipErase(void);
-FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length);
+FlashStatus_t FlashChipErase(void); // exposed for testing
+FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length);	// exposed for testing
 
 // Flash commands
 #define FLASH_CMD_WRITE_ENABLE				0x06

@@ -27,6 +27,7 @@
 extern SPI_HandleTypeDef hspi1;
 
 static uint8_t spiCmdBuf[10];
+static uint8_t spiTxBuf[FLASH_SECTOR_SIZE_4K];
 //uint8_t spiRxBuf[10];
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
@@ -155,29 +156,25 @@ FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pol
 FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32_t size, uint32_t timeoutMs)
 {
 	HAL_StatusTypeDef hal_status;
-//	FlashStatus_t wait_status;
 	osStatus_t rtos_status;
 
-	static uint8_t dummyTx[FLASH_PAGE_SIZE];
+	memset(spiTxBuf, 0x00, size);
 
-	memset(dummyTx, 0x00, size);
-
-	// 1. Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
+	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
 	spiCmdBuf[0] = FLASH_CMD_READ_DATA;
 	spiCmdBuf[1] = (flashAddress >> 16) & 0xFF;
 	spiCmdBuf[2] = (flashAddress >> 8)  & 0xFF;
 	spiCmdBuf[3] =  flashAddress        & 0xFF;
 
-	// 2. Track total elapsed time using RTOS ticks
+	// Track total elapsed time using RTOS ticks
 	uint32_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
 	uint32_t startTime = osKernelGetTickCount();
 
 
-	// 4. Assert Chip Select Low to begin SPI transaction
+	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
 
-
-	// 5. Send the 4-byte command packet using non-blocking Interrupt mode
+	// Send the 4-byte command packet using non-blocking Interrupt mode
 	hal_status = HAL_SPI_Transmit_IT(&hspi1, spiCmdBuf, 4);
 	if (hal_status != HAL_OK)
 	{
@@ -185,15 +182,13 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 		return FLASH_HW_PROBLEM;
 	}
 
-
-	// 6. Block thread until command transmission finishes
+	// Block thread until command transmission finishes
 	rtos_status = osSemaphoreAcquire(spiIoSemHandle, timeoutTicks);
 	if (rtos_status != osOK)
 	{
 		FlashCsDeselect();
 		return FLASH_TIMEOUT;
 	}
-
 
 	// Recalculate remaining timeout for the actual data phase
 	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
@@ -204,15 +199,14 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	}
 	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
 
-
-	// 7. Receive data payload using optimal peripheral strategy
+	// Receive data payload using optimal peripheral strategy
 	if (size >= SPI_DMA_THRESHOLD)
 	{
-	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, dummyTx, pData, size);
+	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxBuf, pData, size);
 	}
 	else
 	{
-	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, dummyTx, pData, size);
+	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, spiTxBuf, pData, size);
 	}
 
 	if (hal_status != HAL_OK)
@@ -221,11 +215,11 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 		return FLASH_HW_PROBLEM;
 	}
 
-	// 8. Block thread until data payload reception finishes
+	// Block thread until data payload reception finishes
 	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 
 
-	// 9. De-assert Chip Select HIGH immediately to end transaction
+	// De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
 
 	if (rtos_status != osOK)
@@ -257,6 +251,9 @@ void FlashWriteDisable(void)
 // Programs one page in non-blocking mode
 FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 {
+	HAL_StatusTypeDef hal_status;
+	osStatus_t rtos_status;
+
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (length > FLASH_PAGE_SIZE) ||(address + length > FLASH_SIZE))
 	{
@@ -268,12 +265,83 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 		return FLASH_INVALID_ARGUMENT;
 	}
 
-
 	if(!buffer || (length > FLASH_PAGE_SIZE))
 	{
 		return FLASH_INVALID_ARGUMENT;
 	}
 
+	// Unlock Flash for writing
+	FlashWriteEnable();
+
+	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
+	spiCmdBuf[0] = FLASH_CMD_PAGE_PROGRAM;
+	spiCmdBuf[1] = (address >> 16) & 0xFF;
+	spiCmdBuf[2] = (address >> 8)  & 0xFF;
+	spiCmdBuf[3] =  address        & 0xFF;
+
+	// Track total elapsed time using RTOS ticks
+	uint32_t timeoutTicks = pdMS_TO_TICKS(PAGE_PROGRAM_TIMEOUT_MS);
+	uint32_t startTime = osKernelGetTickCount();
+
+
+	// Assert Chip Select Low to begin SPI transaction
+	FlashCsSelect();
+
+	// Send the 4-byte command packet using non-blocking Interrupt mode
+	hal_status = HAL_SPI_Transmit_IT(&hspi1, spiCmdBuf, 4);
+	if (hal_status != HAL_OK)
+	{
+		FlashCsDeselect();
+		return FLASH_HW_PROBLEM;
+	}
+
+	// Block thread until command transmission finishes
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, timeoutTicks);
+	if (rtos_status != osOK)
+	{
+		FlashCsDeselect();
+		return FLASH_TIMEOUT;
+	}
+
+	// Recalculate remaining timeout for the actual data phase
+	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
+	if (elapsedTime >= timeoutTicks)
+	{
+		FlashCsDeselect();
+		return FLASH_TIMEOUT;
+	}
+	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
+
+	// Program data payload using optimal peripheral strategy
+	if (length >= SPI_DMA_THRESHOLD)
+	{
+	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, buffer, spiTxBuf, length);
+	}
+	else
+	{
+	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, buffer, spiTxBuf, length);
+	}
+
+	if (hal_status != HAL_OK)
+	{
+		FlashCsDeselect();
+		return FLASH_HW_PROBLEM;
+	}
+
+	// Block thread until data I/O finishes
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
+
+	// De-assert Chip Select HIGH immediately to end transaction
+	FlashCsDeselect();
+
+	if (rtos_status != osOK)
+	{
+		return FLASH_TIMEOUT;
+	}
+	else
+	{
+		return FLASH_OK;
+	}
 }
 
 // =================
