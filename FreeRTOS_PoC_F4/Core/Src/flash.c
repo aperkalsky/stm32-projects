@@ -422,7 +422,8 @@ FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 
 FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 {
-	return FLASH_OK;
+	// for meantime call page program directly
+	return FlashPageProgram(address, (void*)buffer, length);
 }
 
 // blocking variant

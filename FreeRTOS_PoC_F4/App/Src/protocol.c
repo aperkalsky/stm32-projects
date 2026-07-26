@@ -196,6 +196,47 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	}
 }
 
+void OnCmdWriteFlash(uint16_t seq, uint8_t* payload)
+{
+	WRITE_FLASH_IN* pIn = (WRITE_FLASH_IN*)payload;
+	FlashStatus_t status = FLASH_OK;
+
+//	SEGGER_RTT_printf(0, "Flash write: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
+
+	if((pIn->size == 0) || (pIn->size > FLASH_PAGE_SIZE) || ((pIn->address + pIn->size) > FLASH_SIZE))
+	{
+		SendResponse(
+				CMD_WRITE_FLASH,
+				seq,
+				TLV_STAT_INVALID_ARGUMENT,
+				NULL,
+				0);
+	}
+
+	status = FlashWrite(pIn->address, (void*)txPayload, pIn->size);
+
+	if(status == FLASH_OK)
+	{
+		SendResponse(
+				CMD_WRITE_FLASH,
+				seq,
+				TLV_STAT_OK,
+				txPayload,
+				sizeof(READ_FLASH_OUT));
+	}
+	else
+	{
+		SEGGER_RTT_printf(0, "Flash write failed. Status = %d\r\n", status);
+
+		SendResponse(
+				CMD_WRITE_FLASH,
+				seq,
+				TLV_STAT_FAILURE,
+				NULL,
+				0);
+	}
+}
+
 void OnCmdTest1(uint16_t seq)
 {
 	FlashStatus_t ret = FlashChipErase();
@@ -264,6 +305,10 @@ static void HandlePacket(
 
 	case CMD_READ_FLASH:
 		OnCmdReadFlash(seq, payload);
+		break;
+
+	case CMD_WRITE_FLASH:
+		OnCmdWriteFlash(seq, payload);
 		break;
 
 	case CMD_TEST_1:

@@ -28,6 +28,11 @@ import struct
 from dataclasses import dataclass
 from struct import calcsize
 
+#--------------------------------------------
+# direction IN - from the host to the board
+# direction OUT - from the board to the host
+#--------------------------------------------
+
 UInt16 = int
 UInt32 = int
 
@@ -83,6 +88,19 @@ class ReadFlashOut(SerializablePayload):
     @classmethod
     def from_bytes(cls, payload: bytes):
         return cls(payload)
+
+@dataclass
+class WriteFlashIn(SerializablePayload):
+
+    FORMAT = "<IB"   # address:uint32, size:uint16, data: uint8
+
+    address: int
+    size: int
+    data: bytes
+
+    @classmethod
+    def pack(cls, address: int, size: int, data: bytes) -> bytes:
+        return struct.pack(cls.FORMAT, address, size)
 
 @dataclass
 class PwmLedCtlIn(SerializablePayload):
