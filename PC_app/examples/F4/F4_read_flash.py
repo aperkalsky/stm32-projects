@@ -49,8 +49,38 @@ def read_entire_chip_in_chunks_of_128():
             else:
                 print(f"Read from {addr} failed")
 
+def read_interactive():
+    address = input("Enter start address (dec/hex) to read from (xxx or 0xxx):\r\n").strip()
+
+    if address.lower().startswith("0x"):
+        try:
+            address = int(address, 16)
+        except ValueError:
+            print("Error: Invalid hex characters after '0x'.")
+            return
+    elif address.isdecimal():
+        address = int(address, 10)
+    else:
+        print("Error: Input must be a decimal number or a hex value prefixed with '0x'.")
+        return
+
+    length = input("Enter the number of bytes to read (1..256):\r\n").strip()
+    if length.isdigit():
+        length = int(length)
+        if length > 0 and length <= 256:
+            result = dev.flash.read(address, length)
+
+            if result is not None:
+                print("Read OK")
+                print(result.data.hex())
+            else:
+                print("Read failed")
+        else:
+            print("Number of bytes to read is out of range")
+
 if __name__ == "__main__":
 #    read_entire_chip()
-    read_one_shot()
+#    read_one_shot()
 #    read_entire_chip_in_chunks_of_128()
+    read_interactive()
 
