@@ -27,6 +27,7 @@
 import struct
 from dataclasses import dataclass
 from struct import calcsize
+from config.F4_config import FLASH_PAGE_SIZE
 
 #--------------------------------------------
 # direction IN - from the host to the board
@@ -92,15 +93,21 @@ class ReadFlashOut(SerializablePayload):
 @dataclass
 class WriteFlashIn(SerializablePayload):
 
-    FORMAT = "<IB"   # address:uint32, size:uint16, data: uint8
+    HEADER_FORMAT = "<IH"      # address:uint32, size (calculated internally):uint16
 
     address: int
-    size: int
     data: bytes
 
     @classmethod
-    def pack(cls, address: int, size: int, data: bytes) -> bytes:
-        return struct.pack(cls.FORMAT, address, size)
+    def pack(cls, address: int, data: bytes) -> bytes:
+        size = len(data)
+
+        if not (1 <= size <= FLASH_PAGE_SIZE):
+            raise ValueError(
+                f"data length must be between 1 and {FLASH_PAGE_SIZE} bytes"
+            )
+
+        return struct.pack(cls.HEADER_FORMAT, address, size) + data
 
 @dataclass
 class PwmLedCtlIn(SerializablePayload):

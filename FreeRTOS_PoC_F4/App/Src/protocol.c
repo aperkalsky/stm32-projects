@@ -213,7 +213,7 @@ void OnCmdWriteFlash(uint16_t seq, uint8_t* payload)
 				0);
 	}
 
-	status = FlashWrite(pIn->address, (void*)txPayload, pIn->size);
+	status = FlashWrite(pIn->address, (void*)pIn->data, pIn->size);
 
 	if(status == FLASH_OK)
 	{

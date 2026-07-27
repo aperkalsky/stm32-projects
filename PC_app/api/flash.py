@@ -1,11 +1,8 @@
 # flash-related API commands
 
-from payloads.payload import GetFlashIdOut, ReadFlashOut, ReadFlashIn
-from protocol.commands import CMD_GET_FLASH_ID, CMD_READ_FLASH
+from payloads.payload import GetFlashIdOut, ReadFlashOut, ReadFlashIn, WriteFlashIn
+from protocol.commands import CMD_GET_FLASH_ID, CMD_READ_FLASH, CMD_WRITE_FLASH
 from protocol.status import TlvStatus
-
-FLASH_SIZE = 2*1024*1024
-FLASH_PAGE_SIZE = 256
 
 class FlashApi:
 
@@ -32,3 +29,10 @@ class FlashApi:
             # Firmware returns a full flash page buffer; slice to requested size
             return ReadFlashOut.from_bytes(response.payload[:size])
         return None
+
+    def write(self, address: int, data: bytes):
+
+        payload = WriteFlashIn.pack(address, data)
+        response = self.device.execute(CMD_WRITE_FLASH, payload)
+
+        return response.status
