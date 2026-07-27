@@ -46,6 +46,7 @@ def iterate_pages():
         write_data(page_addr + offset, bytes_to_write)
         time.sleep(0.1)
         bytes_read = read_data(page_addr + offset, len(bytes_to_write))
+        print(f"bytes_read = {bytes_read}")
         time.sleep(0.1)
         if bytes_read is not None:
             print(bytes_read)

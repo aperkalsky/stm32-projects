@@ -280,9 +280,8 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	spiCmdBuf[3] =  address        & 0xFF;
 
 	// Track total elapsed time using RTOS ticks
-	uint32_t timeoutTicks = pdMS_TO_TICKS(PAGE_PROGRAM_TIMEOUT_MS);
+	uint32_t timeoutTicks = pdMS_TO_TICKS(FLASH_PAGE_PROG_TIMEOUT_MS);
 	uint32_t startTime = osKernelGetTickCount();
-
 
 	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
@@ -300,6 +299,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	if (rtos_status != osOK)
 	{
 		FlashCsDeselect();
+		SEGGER_RTT_WriteString(0, "Can't take sem\r\n");
 		return FLASH_TIMEOUT;
 	}
 
@@ -308,6 +308,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	if (elapsedTime >= timeoutTicks)
 	{
 		FlashCsDeselect();
+		SEGGER_RTT_WriteString(0, "Sem too late\r\n");
 		return FLASH_TIMEOUT;
 	}
 	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
@@ -336,6 +337,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 
 	if (rtos_status != osOK)
 	{
+		SEGGER_RTT_WriteString(0, "I/O too long\r\n");
 		return FLASH_TIMEOUT;
 	}
 	else

@@ -14,7 +14,11 @@
 #define SPI_DMA_THRESHOLD    16	// if less than this, use interrupts for data transfer
 #define LSB_ADDRESS_MASK		 (uint32_t)0x000000FF
 
-#define PAGE_PROGRAM_TIMEOUT_MS	5
+// timing parameters
+#define FLASH_CHIP_ERASE_TIMEOUT_MS				30000
+#define FLASH_CHIP_ERASE_POLL_INTERVAL_MS	1000
+#define FLASH_PAGE_PROG_POLL_INTERVAL_MS	2
+#define FLASH_PAGE_PROG_TIMEOUT_MS				10
 
 // Return statuses
 typedef enum{
@@ -88,9 +92,5 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length);
 
 // status register bits
 #define STATUS_WIP_BIT                0x01
-
-// timing parameters
-#define FLASH_CHIP_ERASE_TIMEOUT_MS				30000
-#define FLASH_CHIP_ERASE_POLL_INTERVAL_MS	1000
 
 #endif
