@@ -64,10 +64,10 @@ def read_interactive():
         print("Error: Input must be a decimal number or a hex value prefixed with '0x'.")
         return
 
-    length = input("Enter the number of bytes to read (1..256):\r\n").strip()
+    length = input(f"Enter the number of bytes to read (1..{FLASH_PAGE_SIZE}):\r\n").strip()
     if length.isdigit():
         length = int(length)
-        if length > 0 and length <= 256:
+        if length > 0 and length <= FLASH_PAGE_SIZE:
             result = dev.flash.read(address, length)
 
             if result is not None:
