@@ -11,7 +11,7 @@
 #define FLASH_PAGE_SIZE      256
 #define FLASH_SECTOR_SIZE_4K	4096
 #define	FLASH_SIZE           (uint32_t)(2*1024*1024)
-#define SPI_DMA_THRESHOLD    16	// if less than this, use interrupts for data transfer
+#define SPI_DMA_THRESHOLD    10	// if less than this, use interrupts for data transfer
 #define LSB_ADDRESS_MASK		 (uint32_t)0x000000FF
 
 // timing parameters

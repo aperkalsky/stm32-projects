@@ -67,7 +67,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 	{
 		osSemaphoreRelease(spiIoSemHandle);
 		txCnt += 1;
-//		SEGGER_RTT_WriteString(0, "Tx cplt\r\n");
 	}
 }
 
@@ -77,7 +76,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 	{
 		osSemaphoreRelease(spiIoSemHandle);
 		rxCnt += 1;
-//		SEGGER_RTT_WriteString(0, "Rx cplt\r\n");
 	}
 }
 
@@ -87,7 +85,6 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 	{
 		osSemaphoreRelease(spiIoSemHandle);
 		txrxCnt += 1;
-//		SEGGER_RTT_WriteString(0, "TxRx cplt\r\n");
 	}
 }
 
@@ -170,6 +167,9 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	uint32_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
 	uint32_t startTime = osKernelGetTickCount();
 
+//	SEGGER_RTT_printf(0, "TO ticks = %d\r\n", timeoutTicks);
+	SEGGER_RTT_printf(0, "1 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
+
 
 	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
@@ -192,12 +192,16 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 
 	// Recalculate remaining timeout for the actual data phase
 	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
+//	SEGGER_RTT_printf(0, "elapsed ticks = %d\r\n", elapsedTime);
+	SEGGER_RTT_printf(0, "2 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
+
 	if (elapsedTime >= timeoutTicks)
 	{
 		FlashCsDeselect();
 		return FLASH_TIMEOUT;
 	}
 	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
+	SEGGER_RTT_printf(0, "rem ticks = %d\r\n", remainingTimeoutTicks);
 
 	// Receive data payload using optimal peripheral strategy
 	if (size >= SPI_DMA_THRESHOLD)
@@ -215,12 +219,17 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 		return FLASH_HW_PROBLEM;
 	}
 
+	SEGGER_RTT_printf(0, "3 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
+
 	// Block thread until data payload reception finishes
 	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
 
 
 	// De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
+
+	SEGGER_RTT_printf(0, "4 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
+
 
 	if (rtos_status != osOK)
 	{
