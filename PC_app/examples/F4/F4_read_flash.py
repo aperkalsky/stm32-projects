@@ -49,6 +49,7 @@ def read_entire_chip_in_chunks_of_128():
             else:
                 print(f"Read from {addr} failed")
 
+# to test a problem with few bytes reading in interrupt mode
 def read_few_bytes_in_loop():
     num_bytes_to_read = 13
     max_address = 0x1000
@@ -95,6 +96,6 @@ if __name__ == "__main__":
 #    read_entire_chip()
 #    read_one_shot()
 #    read_entire_chip_in_chunks_of_128()
-#    read_interactive()
-    read_few_bytes_in_loop()
+    read_interactive()
+#    read_few_bytes_in_loop()
 
