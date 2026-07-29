@@ -158,6 +158,10 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
+	DBG0_Low();
+	DBG1_Low();
+	DBG2_Low();
+
 	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
 	spiTxRxBuf[0] = FLASH_CMD_READ_DATA;
 	spiTxRxBuf[1] = (flashAddress >> 16) & 0xFF;
@@ -169,6 +173,8 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 
 	// use the same buffer for Tx/Rx
   hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, size + MAX_FLASH_CMD_LENGTH);
+
+  DBG1_High();
 
 	if (hal_status != HAL_OK)
 	{
