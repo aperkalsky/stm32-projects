@@ -40,6 +40,7 @@ def read_data(address, num_bytes):
         return None
 
 def iterate_pages():
+    page_success = page_failure = 0
     for page_addr in range(0, FLASH_SIZE, FLASH_PAGE_SIZE):
         offset, bytes_to_write = get_prog_pattern()
         print(f"address = {hex(page_addr)} offset: {offset}, length: {len(bytes_to_write)} last_addr = {offset + len(bytes_to_write)} bytes: {bytes_to_write.hex()}")
@@ -57,9 +58,13 @@ def iterate_pages():
                     num_failures += 1
 
             if num_failures > 0:
+                page_failure += 1
                 print(f"Comparison failed. Num failures: {num_failures}")
             else:
+                page_success += 1
                 print("Comparison passed")
+
+    print("page_success = {} page_failure = {}".format(page_success, page_failure))
 
 if __name__ == "__main__":
     iterate_pages()

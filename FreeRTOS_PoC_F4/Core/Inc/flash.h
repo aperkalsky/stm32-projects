@@ -11,14 +11,12 @@
 #define FLASH_PAGE_SIZE      256
 #define FLASH_SECTOR_SIZE_4K	4096
 #define	FLASH_SIZE           (uint32_t)(2*1024*1024)
-#define SPI_DMA_THRESHOLD    10	// if less than this, use interrupts for data transfer
 #define LSB_ADDRESS_MASK		 (uint32_t)0x000000FF
 #define MAX_FLASH_CMD_LENGTH 4	// command + 3 address bytes
 
 // timing parameters
 #define FLASH_CHIP_ERASE_TIMEOUT_MS				30000
 #define FLASH_CHIP_ERASE_POLL_INTERVAL_MS	1000
-#define FLASH_PAGE_PROG_POLL_INTERVAL_MS	2
 #define FLASH_PAGE_PROG_TIMEOUT_MS				10
 
 // Return statuses

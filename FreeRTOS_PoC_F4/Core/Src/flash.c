@@ -27,9 +27,8 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-static uint8_t spiCmdBuf[10];
-//static uint8_t spiTxBuf[FLASH_SECTOR_SIZE_4K];
-static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH];
+static uint8_t spiCmdBuf[MAX_FLASH_CMD_LENGTH + 1];	// buffer for blocking I/O
+static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH]; // for non-blocking I/O
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
 static osSemaphoreId_t spiIoSemHandle;
@@ -66,7 +65,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		DBG0_Low();
+//		DBG0_Low();
 		osSemaphoreRelease(spiIoSemHandle);
 		txCnt += 1;
 	}
@@ -85,7 +84,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		DBG1_Low();
+//		DBG1_Low();
 		osSemaphoreRelease(spiIoSemHandle);
 		txrxCnt += 1;
 	}
@@ -100,6 +99,7 @@ FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pol
 
 	uint32_t startTime = osKernelGetTickCount();
 
+	// a separate buffer for Tx is used, as we want to send the same command more than once
 	statusTxBuf[0] = FLASH_CMD_READ_STAT_REG_1;
 	statusTxBuf[1] = 0x00; // Dummy byte to read response
 
