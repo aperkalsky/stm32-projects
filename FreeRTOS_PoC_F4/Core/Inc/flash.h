@@ -13,6 +13,7 @@
 #define	FLASH_SIZE           (uint32_t)(2*1024*1024)
 #define SPI_DMA_THRESHOLD    10	// if less than this, use interrupts for data transfer
 #define LSB_ADDRESS_MASK		 (uint32_t)0x000000FF
+#define MAX_FLASH_CMD_LENGTH 4	// command + 3 address bytes
 
 // timing parameters
 #define FLASH_CHIP_ERASE_TIMEOUT_MS				30000

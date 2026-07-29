@@ -1,5 +1,7 @@
+import datetime
 import sys
 import os
+import time
 
 # Adds the parent directory (PC_app) to the Python path (two levels up)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -23,18 +25,27 @@ def read_one_shot():
         print("Read failed")
 
 def read_entire_chip():
-    out_file = open("flash_contents.bin", "w")
+    out_file = open("flash_contents.bin", "wb")
+
+    start_time = time.perf_counter()
 
     for addr in range(0, FLASH_SIZE, FLASH_PAGE_SIZE):
         result = dev.flash.read(addr, FLASH_PAGE_SIZE)
 
         if result is not None:
             print(f"Read from {addr} OK")
-            out_file.write(result.data.hex())
+            out_file.write(result.data)
         else:
             print(f"Read from {addr} failed")
 
+    stop_time = time.perf_counter()
+
     out_file.close()
+
+    elapsed_seconds = stop_time - start_time
+    time_string = str(datetime.timedelta(seconds=int(elapsed_seconds)))
+
+    print("Time elapsed = {}".format(time_string))
 
 def read_entire_chip_in_chunks_of_128():
     chunk_size = int(FLASH_PAGE_SIZE / 2)
@@ -93,9 +104,9 @@ def read_interactive():
             print("Number of bytes to read is out of range")
 
 if __name__ == "__main__":
-#    read_entire_chip()
+    read_entire_chip()
 #    read_one_shot()
 #    read_entire_chip_in_chunks_of_128()
-    read_interactive()
+#    read_interactive()
 #    read_few_bytes_in_loop()
 
