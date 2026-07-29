@@ -44,10 +44,10 @@ def iterate_pages():
         offset, bytes_to_write = get_prog_pattern()
         print(f"address = {hex(page_addr)} offset: {offset}, length: {len(bytes_to_write)} last_addr = {offset + len(bytes_to_write)} bytes: {bytes_to_write.hex()}")
         write_data(page_addr + offset, bytes_to_write)
-        time.sleep(0.01)
+#        time.sleep(0.01)
         bytes_read = read_data(page_addr + offset, len(bytes_to_write))
         print(f"bytes_read = {bytes_read}")
-        time.sleep(0.01)
+#        time.sleep(0.01)
         if bytes_read is not None:
             print(bytes_read)
             num_failures = 0

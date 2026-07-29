@@ -28,7 +28,7 @@
 extern SPI_HandleTypeDef hspi1;
 
 static uint8_t spiCmdBuf[10];
-static uint8_t spiTxBuf[FLASH_SECTOR_SIZE_4K];
+//static uint8_t spiTxBuf[FLASH_SECTOR_SIZE_4K];
 static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH];
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
@@ -158,23 +158,16 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
-	DBG0_Low();
-	DBG1_Low();
-	DBG2_Low();
-
 	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
 	spiTxRxBuf[0] = FLASH_CMD_READ_DATA;
 	spiTxRxBuf[1] = (flashAddress >> 16) & 0xFF;
 	spiTxRxBuf[2] = (flashAddress >> 8)  & 0xFF;
 	spiTxRxBuf[3] =  flashAddress        & 0xFF;
 
-	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
 
 	// use the same buffer for Tx/Rx
   hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, size + MAX_FLASH_CMD_LENGTH);
-
-  DBG1_High();
 
 	if (hal_status != HAL_OK)
 	{
@@ -238,24 +231,24 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 		return FLASH_INVALID_ARGUMENT;
 	}
 
+	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
+	spiTxRxBuf[0] = FLASH_CMD_PAGE_PROGRAM;
+	spiTxRxBuf[1] = (address >> 16) & 0xFF;
+	spiTxRxBuf[2] = (address >> 8)  & 0xFF;
+	spiTxRxBuf[3] =  address        & 0xFF;
+
+	// fill data to be written
+	memcpy(&spiTxRxBuf[MAX_FLASH_CMD_LENGTH], buffer,  length);
+
 	// Unlock Flash for writing
 	FlashWriteEnable();
-
-	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
-	spiCmdBuf[0] = FLASH_CMD_PAGE_PROGRAM;
-	spiCmdBuf[1] = (address >> 16) & 0xFF;
-	spiCmdBuf[2] = (address >> 8)  & 0xFF;
-	spiCmdBuf[3] =  address        & 0xFF;
-
-	// Track total elapsed time using RTOS ticks
-	uint32_t timeoutTicks = pdMS_TO_TICKS(FLASH_PAGE_PROG_TIMEOUT_MS);
-	uint32_t startTime = osKernelGetTickCount();
 
 	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
 
 	// Send the 4-byte command packet using non-blocking TxRx Interrupt mode
-	hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, spiCmdBuf, spiTxBuf, 4);
+  hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, length + MAX_FLASH_CMD_LENGTH);
+
 	if (hal_status != HAL_OK)
 	{
 		FlashCsDeselect();
@@ -263,49 +256,12 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	}
 
 	// Block thread until command transmission finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, timeoutTicks);
-	if (rtos_status != osOK)
-	{
-		FlashCsDeselect();
-		SEGGER_RTT_WriteString(0, "Can't take sem\r\n");
-		return FLASH_TIMEOUT;
-	}
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, pdMS_TO_TICKS(FLASH_PAGE_PROG_TIMEOUT_MS));
 
-	// Recalculate remaining timeout for the actual data phase
-	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
-	if (elapsedTime >= timeoutTicks)
-	{
-		FlashCsDeselect();
-		SEGGER_RTT_WriteString(0, "Sem too late\r\n");
-		return FLASH_TIMEOUT;
-	}
-	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
-
-	// Program data payload using optimal peripheral strategy
-	if (length >= SPI_DMA_THRESHOLD)
-	{
-	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, buffer, spiTxBuf, length);
-	}
-	else
-	{
-	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, buffer, spiTxBuf, length);
-	}
-
-	if (hal_status != HAL_OK)
-	{
-		FlashCsDeselect();
-		return FLASH_HW_PROBLEM;
-	}
-
-	// Block thread until data I/O finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
-
-	// De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
 
 	if (rtos_status != osOK)
 	{
-		SEGGER_RTT_WriteString(0, "I/O too long\r\n");
 		return FLASH_TIMEOUT;
 	}
 	else
@@ -313,6 +269,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 		return FLASH_OK;
 	}
 }
+
 
 // =================
 // exposed functions
