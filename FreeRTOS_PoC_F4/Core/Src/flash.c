@@ -27,9 +27,8 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-static uint8_t spiCmdBuf[10];
-static uint8_t spiTxBuf[FLASH_SECTOR_SIZE_4K];
-//uint8_t spiRxBuf[10];
+static uint8_t spiCmdBuf[MAX_FLASH_CMD_LENGTH + 1];	// buffer for blocking I/O
+static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH]; // for non-blocking I/O
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
 static osSemaphoreId_t spiIoSemHandle;
@@ -66,7 +65,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		DBG0_Low();
+//		DBG0_Low();
 		osSemaphoreRelease(spiIoSemHandle);
 		txCnt += 1;
 	}
@@ -85,7 +84,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		DBG1_Low();
+//		DBG1_Low();
 		osSemaphoreRelease(spiIoSemHandle);
 		txrxCnt += 1;
 	}
@@ -100,6 +99,7 @@ FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pol
 
 	uint32_t startTime = osKernelGetTickCount();
 
+	// a separate buffer for Tx is used, as we want to send the same command more than once
 	statusTxBuf[0] = FLASH_CMD_READ_STAT_REG_1;
 	statusTxBuf[1] = 0x00; // Dummy byte to read response
 
@@ -158,100 +158,37 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
-	memset(spiTxBuf, 0x00, size);
-
 	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
-	spiCmdBuf[0] = FLASH_CMD_READ_DATA;
-	spiCmdBuf[1] = (flashAddress >> 16) & 0xFF;
-	spiCmdBuf[2] = (flashAddress >> 8)  & 0xFF;
-	spiCmdBuf[3] =  flashAddress        & 0xFF;
+	spiTxRxBuf[0] = FLASH_CMD_READ_DATA;
+	spiTxRxBuf[1] = (flashAddress >> 16) & 0xFF;
+	spiTxRxBuf[2] = (flashAddress >> 8)  & 0xFF;
+	spiTxRxBuf[3] =  flashAddress        & 0xFF;
 
-	// Track total elapsed time using RTOS ticks
-	uint32_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
-	uint32_t startTime = osKernelGetTickCount();
-
-//	SEGGER_RTT_printf(0, "TO ticks = %d\r\n", timeoutTicks);
-//	SEGGER_RTT_printf(0, "1 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
-	DBG0_Low();
-	DBG1_Low();
-	DBG2_Low();
-
-
-	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
 
-	// Send the 4-byte command packet using non-blocking TxRx Interrupt mode
-	hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, spiCmdBuf, spiTxBuf, 4);
+	// use the same buffer for Tx/Rx
+  hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, size + MAX_FLASH_CMD_LENGTH);
+
 	if (hal_status != HAL_OK)
 	{
 		FlashCsDeselect();
 		return FLASH_HW_PROBLEM;
 	}
-
-	DBG0_High();
 
 	// Block thread until command transmission finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, timeoutTicks);
-	if (rtos_status != osOK)
-	{
-		FlashCsDeselect();
-		return FLASH_TIMEOUT;
-	}
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, pdMS_TO_TICKS(timeoutMs));
 
-	DBG1_High();
-//	SEGGER_RTT_printf(0, "SR=%04X\n", hspi1.Instance->SR);
-
-	// Recalculate remaining timeout for the actual data phase
-	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
-//	SEGGER_RTT_printf(0, "elapsed ticks = %d\r\n", elapsedTime);
-//	SEGGER_RTT_printf(0, "2 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
-
-	if (elapsedTime >= timeoutTicks)
-	{
-		FlashCsDeselect();
-		return FLASH_TIMEOUT;
-	}
-
-	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
-//	SEGGER_RTT_printf(0, "rem ticks = %d\r\n", remainingTimeoutTicks);
-
-	// Receive data payload using optimal peripheral strategy
-	if (size >= SPI_DMA_THRESHOLD)
-	{
-	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxBuf, pData, size);
-	}
-	else
-	{
-	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, spiTxBuf, pData, size);
-	}
-
-	if (hal_status != HAL_OK)
-	{
-		FlashCsDeselect();
-		return FLASH_HW_PROBLEM;
-	}
-
-	DBG2_High();
-
-//	SEGGER_RTT_printf(0, "3 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
-
-	// Block thread until data payload reception finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
-
-
-	// De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
 
-//	SEGGER_RTT_printf(0, "4 Tx = %d Rx = %d TxRx = %d\r\n", txCnt, rxCnt, txrxCnt);
-
-
 	if (rtos_status != osOK)
 	{
-		SEGGER_RTT_printf(0, "SPI state=%d error=%08lX\r\n", HAL_SPI_GetState(&hspi1), HAL_SPI_GetError(&hspi1));
 		return FLASH_TIMEOUT;
 	}
 	else
 	{
+		// copy received data to user buffer
+		memcpy(pData, &spiTxRxBuf[MAX_FLASH_CMD_LENGTH], size);
+
 		return FLASH_OK;
 	}
 }
@@ -294,24 +231,24 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 		return FLASH_INVALID_ARGUMENT;
 	}
 
+	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
+	spiTxRxBuf[0] = FLASH_CMD_PAGE_PROGRAM;
+	spiTxRxBuf[1] = (address >> 16) & 0xFF;
+	spiTxRxBuf[2] = (address >> 8)  & 0xFF;
+	spiTxRxBuf[3] =  address        & 0xFF;
+
+	// fill data to be written
+	memcpy(&spiTxRxBuf[MAX_FLASH_CMD_LENGTH], buffer,  length);
+
 	// Unlock Flash for writing
 	FlashWriteEnable();
-
-	// Prepare standard 4-byte command array [Command, Addr2, Addr1, Addr0]
-	spiCmdBuf[0] = FLASH_CMD_PAGE_PROGRAM;
-	spiCmdBuf[1] = (address >> 16) & 0xFF;
-	spiCmdBuf[2] = (address >> 8)  & 0xFF;
-	spiCmdBuf[3] =  address        & 0xFF;
-
-	// Track total elapsed time using RTOS ticks
-	uint32_t timeoutTicks = pdMS_TO_TICKS(FLASH_PAGE_PROG_TIMEOUT_MS);
-	uint32_t startTime = osKernelGetTickCount();
 
 	// Assert Chip Select Low to begin SPI transaction
 	FlashCsSelect();
 
 	// Send the 4-byte command packet using non-blocking TxRx Interrupt mode
-	hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, spiCmdBuf, spiTxBuf, 4);
+  hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, length + MAX_FLASH_CMD_LENGTH);
+
 	if (hal_status != HAL_OK)
 	{
 		FlashCsDeselect();
@@ -319,49 +256,12 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	}
 
 	// Block thread until command transmission finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, timeoutTicks);
-	if (rtos_status != osOK)
-	{
-		FlashCsDeselect();
-		SEGGER_RTT_WriteString(0, "Can't take sem\r\n");
-		return FLASH_TIMEOUT;
-	}
+	rtos_status = osSemaphoreAcquire(spiIoSemHandle, pdMS_TO_TICKS(FLASH_PAGE_PROG_TIMEOUT_MS));
 
-	// Recalculate remaining timeout for the actual data phase
-	uint32_t elapsedTime = osKernelGetTickCount() - startTime;
-	if (elapsedTime >= timeoutTicks)
-	{
-		FlashCsDeselect();
-		SEGGER_RTT_WriteString(0, "Sem too late\r\n");
-		return FLASH_TIMEOUT;
-	}
-	uint32_t remainingTimeoutTicks = timeoutTicks - elapsedTime;
-
-	// Program data payload using optimal peripheral strategy
-	if (length >= SPI_DMA_THRESHOLD)
-	{
-	    hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, buffer, spiTxBuf, length);
-	}
-	else
-	{
-	    hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, buffer, spiTxBuf, length);
-	}
-
-	if (hal_status != HAL_OK)
-	{
-		FlashCsDeselect();
-		return FLASH_HW_PROBLEM;
-	}
-
-	// Block thread until data I/O finishes
-	rtos_status = osSemaphoreAcquire(spiIoSemHandle, remainingTimeoutTicks);
-
-	// De-assert Chip Select HIGH immediately to end transaction
 	FlashCsDeselect();
 
 	if (rtos_status != osOK)
 	{
-		SEGGER_RTT_WriteString(0, "I/O too long\r\n");
 		return FLASH_TIMEOUT;
 	}
 	else
@@ -369,6 +269,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 		return FLASH_OK;
 	}
 }
+
 
 // =================
 // exposed functions
