@@ -311,7 +311,7 @@ static FlashStatus_t FlashSectorErase(uint32_t sectorStart)
 static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offset, const uint8_t *src, uint32_t length)
 {
 	FlashStatus_t status = FLASH_OK;
-	uint8_t page;	// page iterator TODO - rename to pageIndex
+	uint8_t pageIndex;
 
 	if(offset + length > FLASH_SECTOR_SIZE_4K)
 	{
@@ -331,9 +331,9 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 	uint32_t firstPage = offset / FLASH_PAGE_SIZE;
 	uint32_t lastPage = (offset + length - 1) / FLASH_PAGE_SIZE;
 
-	for(page = firstPage; page <= lastPage; page++)
+	for(pageIndex = firstPage; pageIndex <= lastPage; pageIndex++)
 	{
-		dirtyPages |= (1u << page);
+		dirtyPages |= (1u << pageIndex);
 	}
 
 	// do we need to erase this sector?
@@ -384,14 +384,14 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 		}
 
 		// rewrite pages
-		for(page = 0; page < NUM_PAGES_IN_4k_SECTOR; page++)
+		for(pageIndex = 0; pageIndex < NUM_PAGES_IN_4k_SECTOR; pageIndex++)
 		{
-			if((dirtyPages & (1u << page)) == 0)
+			if((dirtyPages & (1u << pageIndex)) == 0)
 			{
 				continue;
 			}
 
-			status = FlashPageProgram(sectorStart + (page * FLASH_PAGE_SIZE), &sectorBuf[page * FLASH_PAGE_SIZE], FLASH_PAGE_SIZE);
+			status = FlashPageProgram(sectorStart + (pageIndex * FLASH_PAGE_SIZE), &sectorBuf[pageIndex * FLASH_PAGE_SIZE], FLASH_PAGE_SIZE);
 
 			if(status != FLASH_OK)
 			{
