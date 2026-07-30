@@ -10,6 +10,7 @@
 
 #define FLASH_PAGE_SIZE      256
 #define FLASH_SECTOR_SIZE_4K	4096
+#define NUM_PAGES_IN_4k_SECTOR	(FLASH_SECTOR_SIZE_4K/FLASH_PAGE_SIZE)
 #define	FLASH_SIZE           (uint32_t)(2*1024*1024)
 #define LSB_ADDRESS_MASK		 (uint32_t)0x000000FF
 #define MAX_FLASH_CMD_LENGTH 4	// command + 3 address bytes
@@ -18,6 +19,7 @@
 #define FLASH_CHIP_ERASE_TIMEOUT_MS				30000
 #define FLASH_CHIP_ERASE_POLL_INTERVAL_MS	1000
 #define FLASH_PAGE_PROG_TIMEOUT_MS				10
+#define FLASH_SECTOR_READ_TIMEOUT_MS			100
 
 // Return statuses
 typedef enum{
@@ -42,7 +44,7 @@ void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer);
 FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length);
 FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length);
 FlashStatus_t FlashChipErase(void); // exposed for testing
-FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length);	// exposed for testing
+FlashStatus_t FlashPageProgram(uint32_t address, const void *buffer, uint32_t length);	// exposed for testing
 
 // Flash commands
 #define FLASH_CMD_WRITE_ENABLE				0x06

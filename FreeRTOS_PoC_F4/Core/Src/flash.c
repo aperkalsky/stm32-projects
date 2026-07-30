@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 #include "cmsis_os.h"
 #include "flash.h"
 #include "main.h"
@@ -29,6 +30,7 @@ extern SPI_HandleTypeDef hspi1;
 
 static uint8_t spiCmdBuf[MAX_FLASH_CMD_LENGTH + 1];	// buffer for blocking I/O
 static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH]; // for non-blocking I/O
+static uint8_t sectorBuf[FLASH_SECTOR_SIZE_4K];	// buffer for (re)programming a sector
 
 // FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
 static osSemaphoreId_t spiIoSemHandle;
@@ -65,7 +67,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-//		DBG0_Low();
+		//		DBG0_Low();
 		osSemaphoreRelease(spiIoSemHandle);
 		txCnt += 1;
 	}
@@ -84,7 +86,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-//		DBG1_Low();
+		//		DBG1_Low();
 		osSemaphoreRelease(spiIoSemHandle);
 		txrxCnt += 1;
 	}
@@ -167,7 +169,7 @@ FlashStatus_t FlashReadNonBlocking(uint32_t flashAddress, uint8_t *pData, uint32
 	FlashCsSelect();
 
 	// use the same buffer for Tx/Rx
-  hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, size + MAX_FLASH_CMD_LENGTH);
+	hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, size + MAX_FLASH_CMD_LENGTH);
 
 	if (hal_status != HAL_OK)
 	{
@@ -210,18 +212,13 @@ void FlashWriteDisable(void)
 }
 
 // Programs one page in non-blocking mode
-FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
+FlashStatus_t FlashPageProgram(uint32_t address, const void *buffer, uint32_t length)
 {
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (length > FLASH_PAGE_SIZE) ||(address + length > FLASH_SIZE))
-	{
-		return FLASH_INVALID_ARGUMENT;
-	}
-
-	if((address & LSB_ADDRESS_MASK) > FLASH_PAGE_SIZE)
 	{
 		return FLASH_INVALID_ARGUMENT;
 	}
@@ -247,7 +244,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	FlashCsSelect();
 
 	// Send the 4-byte command packet using non-blocking TxRx Interrupt mode
-  hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, length + MAX_FLASH_CMD_LENGTH);
+	hal_status = HAL_SPI_TransmitReceive_DMA(&hspi1, spiTxRxBuf, spiTxRxBuf, length + MAX_FLASH_CMD_LENGTH);
 
 	if (hal_status != HAL_OK)
 	{
@@ -270,6 +267,141 @@ FlashStatus_t FlashPageProgram(uint32_t address, void *buffer, uint32_t length)
 	}
 }
 
+static inline uint32_t FlashOffsetInPage(uint32_t address)
+{
+    return address & (FLASH_PAGE_SIZE - 1U);
+}
+
+static inline uint32_t FlashSectorStart(uint32_t address)
+{
+    return address & ~(FLASH_SECTOR_SIZE_4K - 1U);
+}
+
+static inline uint32_t FlashOffsetInSector(uint32_t address)
+{
+    return address & (FLASH_SECTOR_SIZE_4K - 1U);
+}
+
+// Checks whether programming the supplied data would require a sector erase
+// Returns true if any bit would need to change from 0 -> 1.
+static bool FlashSectorNeedsErase(uint32_t offset, const uint8_t *src, uint32_t length)
+{
+	uint32_t i;
+
+	for (i = 0; i < length; i++)
+	{
+		uint8_t oldByte = sectorBuf[offset + i];
+		uint8_t newByte = src[i];
+
+		if ((oldByte & newByte) != newByte)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// TODO: implementation
+static FlashStatus_t FlashSectorErase(uint32_t sectorStart)
+{
+	return FLASH_OK;
+}
+
+static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offset, const uint8_t *src, uint32_t length)
+{
+	FlashStatus_t status = FLASH_OK;
+	uint8_t page;	// page iterator TODO - rename to pageIndex
+
+	if(offset + length > FLASH_SECTOR_SIZE_4K)
+	{
+		return FLASH_INVALID_ARGUMENT;
+	}
+
+	// read entire sector to internal buffer
+	status = FlashReadNonBlocking(sectorStart, sectorBuf, FLASH_SECTOR_SIZE_4K, FLASH_SECTOR_READ_TIMEOUT_MS);
+
+	if(status != FLASH_OK)
+	{
+		return status;
+	}
+
+	// determine dirty pages
+	uint16_t dirtyPages = 0;
+	uint32_t firstPage = offset / FLASH_PAGE_SIZE;
+	uint32_t lastPage = (offset + length - 1) / FLASH_PAGE_SIZE;
+
+	for(page = firstPage; page <= lastPage; page++)
+	{
+		dirtyPages |= (1u << page);
+	}
+
+	// do we need to erase this sector?
+	bool eraseNeeded = FlashSectorNeedsErase(offset, src, length);
+
+	if(!eraseNeeded)
+	{
+		// program the pages directly
+		uint32_t remaining = length;
+		uint32_t flashAddr = sectorStart + offset;
+		const uint8_t *p = src;
+
+		while(remaining)
+		{
+			uint32_t pageOffset = FlashOffsetInPage(flashAddr);
+			uint32_t bytesThisPage = FLASH_PAGE_SIZE - pageOffset;
+
+			if(bytesThisPage > remaining)
+			{
+				bytesThisPage = remaining;
+			}
+
+			status = FlashPageProgram(flashAddr, p, bytesThisPage);
+
+			if(status != FLASH_OK)
+			{
+				return status;
+			}
+
+			flashAddr += bytesThisPage;
+			p += bytesThisPage;
+			remaining -= bytesThisPage;
+		}
+	}
+	else
+	{
+		// sector erase is needed
+		// ----------------------
+
+		// merge new data
+		memcpy(&sectorBuf[offset], src, length);
+
+		status = FlashSectorErase(sectorStart);
+
+		if(status != FLASH_OK)
+		{
+			return status;
+		}
+
+		// rewrite pages
+		for(page = 0; page < NUM_PAGES_IN_4k_SECTOR; page++)
+		{
+			if((dirtyPages & (1u << page)) == 0)
+			{
+				continue;
+			}
+
+			status = FlashPageProgram(sectorStart + (page * FLASH_PAGE_SIZE), &sectorBuf[page * FLASH_PAGE_SIZE], FLASH_PAGE_SIZE);
+
+			if(status != FLASH_OK)
+			{
+				return status;
+			}
+		}
+	}
+
+	return status;
+}
 
 // =================
 // exposed functions
@@ -308,7 +440,7 @@ FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 	FlashStatus_t status;
 	uint8_t* pBuf = (uint8_t*)buffer;
 
-//	SEGGER_RTT_printf(0, "FlashRead(%08X, %d)\r\n", address, length);
+	//	SEGGER_RTT_printf(0, "FlashRead(%08X, %d)\r\n", address, length);
 
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (address + length > FLASH_SIZE))
@@ -330,7 +462,7 @@ FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 
 		status = FlashReadNonBlocking(address, pBuf, num_bytes_to_read, 200);
 
-//		SEGGER_RTT_printf(0, "Num bytes to read = %d result = %d \r\n", num_bytes_to_read, status);
+		//		SEGGER_RTT_printf(0, "Num bytes to read = %d result = %d \r\n", num_bytes_to_read, status);
 
 		if(status != FLASH_OK)
 		{
@@ -347,11 +479,12 @@ FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 	return FLASH_OK;
 }
 
+/*
 FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 {
 	// for meantime call page program directly
 	return FlashPageProgram(address, (void*)buffer, length);
-}
+} */
 
 // blocking variant
 void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer)
@@ -392,4 +525,45 @@ FlashStatus_t FlashChipErase(void)
 	FlashWriteDisable();
 
 	return wait_status;
+}
+
+FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
+{
+	FlashStatus_t status = FLASH_OK;
+	const uint8_t *pSrc = (const uint8_t *)buffer;
+
+	if ((buffer == NULL) ||	(length == 0U) ||	((address + length) > FLASH_SIZE))
+	{
+		return FLASH_INVALID_ARGUMENT;
+	}
+
+	while (length > 0U)
+	{
+		uint32_t sectorStart;
+		uint32_t offsetInSector;
+		uint32_t bytesThisSector;
+
+		sectorStart    = FlashSectorStart(address);
+		offsetInSector = FlashOffsetInSector(address);
+
+		bytesThisSector = FLASH_SECTOR_SIZE_4K - offsetInSector;
+
+		if (bytesThisSector > length)
+		{
+			bytesThisSector = length;
+		}
+
+		status = FlashWriteSectorPartial(sectorStart,	offsetInSector, pSrc, bytesThisSector);
+
+		if (status != FLASH_OK)
+		{
+			break;
+		}
+
+		address += bytesThisSector;
+		pSrc += bytesThisSector;
+		length -= bytesThisSector;
+	}
+
+	return status;
 }
