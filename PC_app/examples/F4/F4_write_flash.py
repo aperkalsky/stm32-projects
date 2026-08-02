@@ -12,8 +12,8 @@ dev = Device(SERIAL_PORT, BAUD_RATE)
 
 def simple_write():
     address = 0x00000202
-    data = b"\x01\x02\x03\x04\x05"
-#    size = FLASH_PAGE_SIZE
+#    data = b"\x01\x02\x03\x04\x05"
+    data = b"\xff\xff\xff\xff\xff"
 
     result = dev.flash.write(address, data)
 

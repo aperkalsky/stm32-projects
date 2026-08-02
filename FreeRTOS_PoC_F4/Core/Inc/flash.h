@@ -18,6 +18,8 @@
 // timing parameters
 #define FLASH_CHIP_ERASE_TIMEOUT_MS				30000
 #define FLASH_CHIP_ERASE_POLL_INTERVAL_MS	1000
+#define FLASH_SECTOR_ERASE_TIMEOUT_MS				1000
+#define FLASH_SECTOR_ERASE_POLL_INTERVAL_MS	100
 #define FLASH_PAGE_PROG_TIMEOUT_MS				10
 #define FLASH_SECTOR_READ_TIMEOUT_MS			100
 
@@ -38,7 +40,7 @@ typedef enum{
 void FlashDriverInit(void);
 void FlashReset(void);
 uint32_t FlashReadID(void);
-void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer);
+void FlashReadBlocking(uint32_t address, uint32_t length, uint8_t *buffer);
 
 //		-- non-blocking
 FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length);

@@ -104,9 +104,9 @@ def read_interactive():
             print("Number of bytes to read is out of range")
 
 if __name__ == "__main__":
-    read_entire_chip()
+#    read_entire_chip()
 #    read_one_shot()
 #    read_entire_chip_in_chunks_of_128()
-#    read_interactive()
+    read_interactive()
 #    read_few_bytes_in_loop()
 

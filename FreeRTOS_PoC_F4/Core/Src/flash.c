@@ -217,6 +217,8 @@ FlashStatus_t FlashPageProgram(uint32_t address, const void *buffer, uint32_t le
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
+	SEGGER_RTT_printf(0, "FlashPageProgram 0x%08X, %d\r\n", address, length);
+
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (length > FLASH_PAGE_SIZE) ||(address + length > FLASH_SIZE))
 	{
@@ -305,13 +307,39 @@ static bool FlashSectorNeedsErase(uint32_t offset, const uint8_t *src, uint32_t 
 // TODO: implementation
 static FlashStatus_t FlashSectorErase(uint32_t sectorStart)
 {
-	return FLASH_OK;
+	FlashStatus_t wait_status;
+
+	SEGGER_RTT_printf(0, "FlashSectorErase 0x%08X\r\n", sectorStart);
+
+	// open the chip
+	FlashWriteEnable();
+
+	// send erase command
+	spiCmdBuf[0] = FLASH_CMD_SECT_ERASE_4K;
+	spiCmdBuf[1] = (sectorStart >> 16) & 0xFF;
+	spiCmdBuf[2] = (sectorStart >> 8)  & 0xFF;
+	spiCmdBuf[3] =  sectorStart        & 0xFF;
+
+	FlashCsSelect();
+	SPI_Write(spiCmdBuf, 4);
+	FlashCsDeselect();
+
+	// wait for completion
+	wait_status = FlashWaitUntilReadyNonBlocking(pdMS_TO_TICKS(FLASH_SECTOR_ERASE_TIMEOUT_MS), FLASH_SECTOR_ERASE_POLL_INTERVAL_MS);
+
+	// No need for Write disable: Note that the WEL bit is automatically reset after Power-up and upon
+	// completion of the Write Status Register, Erase/Program Security Registers, Page Program, Quad Page
+	// Program, Sector Erase, Block Erase, Chip Erase and Reset instructions
+
+	return wait_status;
 }
 
 static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offset, const uint8_t *src, uint32_t length)
 {
 	FlashStatus_t status = FLASH_OK;
 	uint8_t pageIndex;
+
+	SEGGER_RTT_printf(0, "FlashWriteSectorPartial(0x%08X off=%d len=%d)\r\n", sectorStart, offset, length);
 
 	if(offset + length > FLASH_SECTOR_SIZE_4K)
 	{
@@ -333,11 +361,13 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 
 	for(pageIndex = firstPage; pageIndex <= lastPage; pageIndex++)
 	{
+		SEGGER_RTT_printf(0, "Page %d dirty\r\n", pageIndex);
 		dirtyPages |= (1u << pageIndex);
 	}
 
 	// do we need to erase this sector?
 	bool eraseNeeded = FlashSectorNeedsErase(offset, src, length);
+	SEGGER_RTT_printf(0, "Need erase = %d\r\n", eraseNeeded);
 
 	if(!eraseNeeded)
 	{
@@ -487,7 +517,7 @@ FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 } */
 
 // blocking variant
-void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer)
+void FlashReadBlocking(uint32_t address, uint32_t length, uint8_t *buffer)
 {
 	spiCmdBuf[0] = FLASH_CMD_READ_DATA;  // enable Read
 	spiCmdBuf[1] = (address>>16)&0xFF;  // MSB of the memory Address
@@ -498,7 +528,7 @@ void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer)
 
 	SPI_Write(spiCmdBuf, 4);  // send read instruction along with the 24 bit memory address
 
-	SPI_Read(buffer, size);  // Read the data
+	SPI_Read(buffer, length);  // Read the data
 
 	FlashCsDeselect();  // pull the CS High
 }
@@ -507,7 +537,6 @@ void FlashReadBlocking(uint32_t address, uint32_t size, uint8_t *buffer)
 FlashStatus_t FlashChipErase(void)
 {
 	FlashStatus_t wait_status;
-	uint32_t timeoutTicks = pdMS_TO_TICKS(FLASH_CHIP_ERASE_TIMEOUT_MS);
 
 	// open the chip
 	FlashWriteEnable();
@@ -519,18 +548,41 @@ FlashStatus_t FlashChipErase(void)
 	FlashCsDeselect();
 
 	// wait for completion
-	wait_status = FlashWaitUntilReadyNonBlocking(timeoutTicks, FLASH_CHIP_ERASE_POLL_INTERVAL_MS);
+	wait_status = FlashWaitUntilReadyNonBlocking(pdMS_TO_TICKS(FLASH_CHIP_ERASE_TIMEOUT_MS), FLASH_CHIP_ERASE_POLL_INTERVAL_MS);
 
-	// close the chip in any case
-	FlashWriteDisable();
+	// No need fro Write disable: Note that the WEL bit is automatically reset after Power-up and upon
+	// completion of the Write Status Register, Erase/Program Security Registers, Page Program, Quad Page
+	// Program, Sector Erase, Block Erase, Chip Erase and Reset instructions
 
 	return wait_status;
 }
 
+/*
+ * FlashWrite()
+ *
+ * Writes data to the specified address, internally performs erase if needed
+ *
+ * Accept data lengths up to 64K (HAL limit)
+ *
+ * The design:
+ * -----------
+ * Walk in steps of one 4K sector
+ * Read sector to internal sector buffer
+ * Create bitmap of dirty pages (those that overlap with input data)
+ * Check if sector erase is needed
+ * If erase is not needed:
+ *   For each page in dirty bitmap - program the page directly
+ * Else (erase is needed):
+ *   Merge new data
+ *   Erase sector
+ *   Program this sector page by page
+ */
 FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 {
 	FlashStatus_t status = FLASH_OK;
 	const uint8_t *pSrc = (const uint8_t *)buffer;
+
+	SEGGER_RTT_printf(0, "FlashWrite 0x%08X, %d\r\n", address, length);
 
 	if ((buffer == NULL) ||	(length == 0U) ||	((address + length) > FLASH_SIZE))
 	{
