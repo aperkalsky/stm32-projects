@@ -3,18 +3,6 @@
  *
  * Flash driver for W25Q16 serial Flash
  *
- *
- * Driver Architecture
- *
- * [User App Thread] ──> Calls Flash_Write_NonBlocking()
- *                           │
- *                           ├── Loops through pages (Max 256 bytes)
- *                           ├── Sends Page Program Command via IT or DMA
- *                           ├── Takes Semaphore (Thread goes to sleep, CPU is free)
- *                           │       ^
- *[Hardware Interrupt] ──────┴───────┼─── Releases Semaphore when transfer finishes
- *                                   │
- *                      [Thread wakes up, loops to next page]
  */
 
 #include <stdint.h>
@@ -28,16 +16,12 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-static uint8_t spiCmdBuf[MAX_FLASH_CMD_LENGTH + 1];	// buffer for blocking I/O
-static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH]; // for non-blocking I/O
+static uint8_t spiCmdBuf[MAX_FLASH_CMD_LENGTH + 1];	// buffer for short commands
+static uint8_t spiTxRxBuf[FLASH_SECTOR_SIZE_4K + MAX_FLASH_CMD_LENGTH]; // for non-blocking I/O, mostly read/write
 static uint8_t sectorBuf[FLASH_SECTOR_SIZE_4K];	// buffer for (re)programming a sector
 
-// FreeRTOS Binary Semaphore to signal SPI transfer completion. Both Rx and Tx
+// FreeRTOS Binary Semaphore to signal SPI transfer completion
 static osSemaphoreId_t spiIoSemHandle;
-
-static uint32_t txCnt = 0;
-static uint32_t rxCnt = 0;
-static uint32_t txrxCnt = 0;
 
 // internal functions
 // ==================
@@ -62,40 +46,17 @@ void SPI_Read(uint8_t *data, uint8_t len)
 	HAL_SPI_Receive(&hspi1, data, len, 5000);
 }
 
-// Callbacks triggered by HAL when the non-blocking transfer finishes
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-	if (hspi->Instance == SPI1)
-	{
-		//		DBG0_Low();
-		osSemaphoreRelease(spiIoSemHandle);
-		txCnt += 1;
-	}
-}
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-	if (hspi->Instance == SPI1)
-	{
-		osSemaphoreRelease(spiIoSemHandle);
-		rxCnt += 1;
-	}
-}
-
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 	{
-		//		DBG1_Low();
 		osSemaphoreRelease(spiIoSemHandle);
-		txrxCnt += 1;
 	}
 }
 
-FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pollDelayMs)
+FlashStatus_t FlashWaitUntilReady(uint32_t timeoutMs, uint32_t pollDelayMs)
 {
 	HAL_StatusTypeDef hal_status;
-	osStatus_t rtos_status;
 	uint8_t statusTxBuf[2];
 	uint8_t statusRxBuf[2];
 
@@ -108,7 +69,7 @@ FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pol
 	while (1)
 	{
 		// Enforce global safety timeout
-		if ((osKernelGetTickCount() - startTime) >= timeoutTicks)
+		if ((osKernelGetTickCount() - startTime) >= pdMS_TO_TICKS(timeoutMs))
 		{
 			return FLASH_TIMEOUT;
 		}
@@ -117,19 +78,11 @@ FlashStatus_t FlashWaitUntilReadyNonBlocking(uint32_t timeoutTicks, uint32_t pol
 		FlashCsSelect();
 
 		// Start non-blocking 2-byte transfer
-		hal_status = HAL_SPI_TransmitReceive_IT(&hspi1, statusTxBuf, statusRxBuf, 2);
+		hal_status = HAL_SPI_TransmitReceive(&hspi1, statusTxBuf, statusRxBuf, 2, timeoutMs);
 		if (hal_status != HAL_OK)
 		{
 			FlashCsDeselect();
 			return FLASH_HW_PROBLEM;
-		}
-
-		// Sleep the thread until the SPI hardware finishes reading the byte. Delay in ms
-		rtos_status = osSemaphoreAcquire(spiIoSemHandle, 10);
-		if (rtos_status != osOK)
-		{
-			FlashCsDeselect();
-			return FLASH_TIMEOUT;
 		}
 
 		// Inspect the received register byte (stored in statusRxBuf[1])
@@ -217,7 +170,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, const void *buffer, uint32_t le
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
-	SEGGER_RTT_printf(0, "FlashPageProgram 0x%08X, %d\r\n", address, length);
+//	SEGGER_RTT_printf(0, "FlashPageProgram 0x%08X, %d\r\n", address, length);
 
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (length > FLASH_PAGE_SIZE) ||(address + length > FLASH_SIZE))
@@ -304,12 +257,11 @@ static bool FlashSectorNeedsErase(uint32_t offset, const uint8_t *src, uint32_t 
 	return false;
 }
 
-// TODO: implementation
 static FlashStatus_t FlashSectorErase(uint32_t sectorStart)
 {
 	FlashStatus_t wait_status;
 
-	SEGGER_RTT_printf(0, "FlashSectorErase 0x%08X\r\n", sectorStart);
+//	SEGGER_RTT_printf(0, "FlashSectorErase 0x%08X\r\n", sectorStart);
 
 	// open the chip
 	FlashWriteEnable();
@@ -325,7 +277,7 @@ static FlashStatus_t FlashSectorErase(uint32_t sectorStart)
 	FlashCsDeselect();
 
 	// wait for completion
-	wait_status = FlashWaitUntilReadyNonBlocking(pdMS_TO_TICKS(FLASH_SECTOR_ERASE_TIMEOUT_MS), FLASH_SECTOR_ERASE_POLL_INTERVAL_MS);
+	wait_status = FlashWaitUntilReady(FLASH_SECTOR_ERASE_TIMEOUT_MS, FLASH_SECTOR_ERASE_POLL_INTERVAL_MS);
 
 	// No need for Write disable: Note that the WEL bit is automatically reset after Power-up and upon
 	// completion of the Write Status Register, Erase/Program Security Registers, Page Program, Quad Page
@@ -339,7 +291,7 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 	FlashStatus_t status = FLASH_OK;
 	uint8_t pageIndex;
 
-	SEGGER_RTT_printf(0, "FlashWriteSectorPartial(0x%08X off=%d len=%d)\r\n", sectorStart, offset, length);
+//	SEGGER_RTT_printf(0, "FlashWriteSectorPartial(0x%08X off=%d len=%d)\r\n", sectorStart, offset, length);
 
 	if(offset + length > FLASH_SECTOR_SIZE_4K)
 	{
@@ -361,13 +313,13 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 
 	for(pageIndex = firstPage; pageIndex <= lastPage; pageIndex++)
 	{
-		SEGGER_RTT_printf(0, "Page %d dirty\r\n", pageIndex);
+//		SEGGER_RTT_printf(0, "Page %d dirty\r\n", pageIndex);
 		dirtyPages |= (1u << pageIndex);
 	}
 
 	// do we need to erase this sector?
 	bool eraseNeeded = FlashSectorNeedsErase(offset, src, length);
-	SEGGER_RTT_printf(0, "Need erase = %d\r\n", eraseNeeded);
+//	SEGGER_RTT_printf(0, "Need erase = %d\r\n", eraseNeeded);
 
 	if(!eraseNeeded)
 	{
@@ -548,7 +500,7 @@ FlashStatus_t FlashChipErase(void)
 	FlashCsDeselect();
 
 	// wait for completion
-	wait_status = FlashWaitUntilReadyNonBlocking(pdMS_TO_TICKS(FLASH_CHIP_ERASE_TIMEOUT_MS), FLASH_CHIP_ERASE_POLL_INTERVAL_MS);
+	wait_status = FlashWaitUntilReady(FLASH_CHIP_ERASE_TIMEOUT_MS, FLASH_CHIP_ERASE_POLL_INTERVAL_MS);
 
 	// No need fro Write disable: Note that the WEL bit is automatically reset after Power-up and upon
 	// completion of the Write Status Register, Erase/Program Security Registers, Page Program, Quad Page
@@ -582,7 +534,7 @@ FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 	FlashStatus_t status = FLASH_OK;
 	const uint8_t *pSrc = (const uint8_t *)buffer;
 
-	SEGGER_RTT_printf(0, "FlashWrite 0x%08X, %d\r\n", address, length);
+//	SEGGER_RTT_printf(0, "FlashWrite 0x%08X, %d\r\n", address, length);
 
 	if ((buffer == NULL) ||	(length == 0U) ||	((address + length) > FLASH_SIZE))
 	{

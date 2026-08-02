@@ -45,8 +45,6 @@ void FlashReadBlocking(uint32_t address, uint32_t length, uint8_t *buffer);
 //		-- non-blocking
 FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length);
 FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length);
-FlashStatus_t FlashChipErase(void); // exposed for testing
-FlashStatus_t FlashPageProgram(uint32_t address, const void *buffer, uint32_t length);	// exposed for testing
 
 // Flash commands
 #define FLASH_CMD_WRITE_ENABLE				0x06

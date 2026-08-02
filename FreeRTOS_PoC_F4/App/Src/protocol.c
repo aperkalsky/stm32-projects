@@ -239,9 +239,9 @@ void OnCmdWriteFlash(uint16_t seq, uint8_t* payload)
 
 void OnCmdTest1(uint16_t seq)
 {
-	FlashStatus_t ret = FlashChipErase();
+//	FlashStatus_t ret = FlashChipErase();
 
-	SEGGER_RTT_printf(0, "Erase status = %d\r\n", ret);
+//	SEGGER_RTT_printf(0, "Erase status = %d\r\n", ret);
 
 	SendResponse(
 			CMD_TEST_1,
@@ -251,19 +251,8 @@ void OnCmdTest1(uint16_t seq)
 			0);
 }
 
-static uint8_t testBuf[FLASH_PAGE_SIZE];
-
 void OnCmdTest2(uint16_t seq)
 {
-	for(uint16_t i = 0; i < FLASH_PAGE_SIZE; i++)
-	{
-		testBuf[i] = (uint8_t)(i + 1);
-	}
-
-	FlashStatus_t ret = FlashPageProgram(0, testBuf, FLASH_PAGE_SIZE);
-
-	SEGGER_RTT_printf(0, "Page prog status = %d\r\n", ret);
-
 	SendResponse(
 			CMD_TEST_2,
 			seq,
