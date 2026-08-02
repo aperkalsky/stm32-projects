@@ -5,6 +5,7 @@
 #include "SEGGER_RTT.h"
 #include <string.h>
 #include "flash.h"
+#include "sd.h"
 
 extern CRC_HandleTypeDef hcrc;
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -242,6 +243,8 @@ void OnCmdTest1(uint16_t seq)
 //	FlashStatus_t ret = FlashChipErase();
 
 //	SEGGER_RTT_printf(0, "Erase status = %d\r\n", ret);
+
+	SD_PrintCardInfo();
 
 	SendResponse(
 			CMD_TEST_1,
