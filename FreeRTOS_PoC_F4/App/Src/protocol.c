@@ -244,7 +244,8 @@ void OnCmdTest1(uint16_t seq)
 
 //	SEGGER_RTT_printf(0, "Erase status = %d\r\n", ret);
 
-	SD_PrintCardInfo();
+//	SD_PrintCardInfo();
+	SD_PrintBootSector();
 
 	SendResponse(
 			CMD_TEST_1,
