@@ -148,7 +148,7 @@ int main(void)
   MX_FSMC_Init();
   /* USER CODE BEGIN 2 */
   lcdInit();
-  LCD_BL_OFF();
+  LCD_BL_ON();
   lcdTest();
 
   /* USER CODE END 2 */
@@ -504,9 +504,9 @@ static void MX_FSMC_Init(void)
   hsram1.Init.WriteBurst = FSMC_WRITE_BURST_DISABLE;
   hsram1.Init.PageSize = FSMC_PAGE_SIZE_NONE;
   /* Timing */
-  Timing.AddressSetupTime = 1;
+  Timing.AddressSetupTime = 15;
   Timing.AddressHoldTime = 15;
-  Timing.DataSetupTime = 5;
+  Timing.DataSetupTime = 24;
   Timing.BusTurnAroundDuration = 0;
   Timing.CLKDivision = 16;
   Timing.DataLatency = 17;
