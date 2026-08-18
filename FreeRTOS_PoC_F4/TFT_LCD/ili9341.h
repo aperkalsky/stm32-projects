@@ -20,7 +20,7 @@
 #define LCD_BL_OFF() HAL_GPIO_WritePin(LCD_BL_GPIO_Port, LCD_BL_Pin, GPIO_PIN_RESET)
 
 #define LCD_BASE0        		((uint32_t)0x6C000000)
-#define LCD_BASE1        		((uint32_t)0x6C080000)
+#define LCD_BASE1        		((uint32_t)0x6C000080)
 
 #define LCD_CmdWrite(command)	*(volatile uint16_t *) (LCD_BASE0) = (command)
 #define LCD_DataWrite(data)		*(volatile uint16_t *) (LCD_BASE1) = (data)
