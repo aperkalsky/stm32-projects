@@ -148,8 +148,14 @@ int main(void)
   MX_FSMC_Init();
   /* USER CODE BEGIN 2 */
   lcdInit();
-  LCD_BL_ON();
+  lcdBacklightOn();
   lcdTest();
+	HAL_Delay(2000);
+	lcdSetTextFont(&Font16);
+	lcdSetCursor(0, lcdGetHeight() - lcdGetTextFont()->Height - 1);
+	lcdSetTextColor(COLOR_WHITE, COLOR_BLACK);
+	lcdPrintf("Hello from LCD");
+
 
   /* USER CODE END 2 */
 

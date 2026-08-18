@@ -73,11 +73,11 @@ typedef struct
 } lcdPropertiesTypeDef;
 
 void					lcdInit(void);
-void              		lcdTest(void);
+void          lcdTest(void);
 void					lcdFillRGB(uint16_t color);
 void					lcdDrawPixel(uint16_t x, uint16_t y, uint16_t color);
-void              		lcdDrawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint16_t color);
-void              		lcdDrawVLine(uint16_t x, uint16_t y0, uint16_t y1, uint16_t color);
+void          lcdDrawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint16_t color);
+void          lcdDrawVLine(uint16_t x, uint16_t y0, uint16_t y1, uint16_t color);
 void 					lcdDrawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
 void					lcdDrawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
 void					lcdDrawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color);
@@ -90,15 +90,15 @@ void					lcdFillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fillco
 void					lcdFillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color);
 void 					lcdFillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
 void					lcdDrawImage(uint16_t x, uint16_t y, GUI_CONST_STORAGE GUI_BITMAP* pBitmap);
-void              		lcdHome(void);
+void          lcdHome(void);
 void 					lcdDrawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg);
 void					lcdPrintf(const char *fmt, ...);
 void					lcdSetTextFont(sFONT* font);
 void					lcdSetTextColor(uint16_t c, uint16_t b);
 void					lcdSetTextWrap(uint8_t w);
-void              		lcdSetOrientation(lcdOrientationTypeDef orientation);
+void          lcdSetOrientation(lcdOrientationTypeDef orientation);
 void					lcdSetCursor(unsigned short x, unsigned short y);
-void              		lcdSetWindow(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1);
+void          lcdSetWindow(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1);
 void					lcdBacklightOff(void);
 void					lcdBacklightOn(void);
 void					lcdInversionOff(void);
@@ -107,13 +107,13 @@ void					lcdDisplayOff(void);
 void					lcdDisplayOn(void);
 void					lcdTearingOff(void);
 void					lcdTearingOn(bool m);
-uint16_t          		lcdGetWidth(void);
-uint16_t          		lcdGetHeight(void);
-uint16_t          		lcdGetControllerID(void);
+uint16_t      lcdGetWidth(void);
+uint16_t      lcdGetHeight(void);
+uint16_t      lcdGetControllerID(void);
 lcdOrientationTypeDef  	lcdGetOrientation(void);
-sFONT*					lcdGetTextFont(void);
+sFONT*				lcdGetTextFont(void);
 lcdPropertiesTypeDef   	lcdGetProperties(void);
-uint16_t				lcdReadPixel(uint16_t x, uint16_t y);
-uint16_t 				lcdColor565(uint8_t r, uint8_t g, uint8_t b);
+uint16_t			lcdReadPixel(uint16_t x, uint16_t y);
+uint16_t 			lcdColor565(uint8_t r, uint8_t g, uint8_t b);
 
 #endif /* ILI9341_H_ */

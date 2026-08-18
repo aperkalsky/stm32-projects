@@ -28,10 +28,10 @@ static unsigned char lcdLandscapeConfig = 0;
 static unsigned char lcdPortraitMirrorConfig = 0;
 static unsigned char lcdLandscapeMirrorConfig = 0;
 
-static void				lcdDrawPixels(uint16_t x, uint16_t y, uint16_t *data, uint32_t dataLength);
+static void						lcdDrawPixels(uint16_t x, uint16_t y, uint16_t *data, uint32_t dataLength);
 static void        		lcdReset(void);
 static void        		lcdWriteCommand(unsigned char command);
-static void             lcdWriteData(unsigned short data);
+static void           lcdWriteData(unsigned short data);
 static unsigned short	lcdReadData(void);
 
 static unsigned char    lcdBuildMemoryAccessControlConfig(
