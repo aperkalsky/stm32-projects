@@ -27,6 +27,7 @@
 #include "SEGGER_RTT.h"
 #include "usb_task.h"
 #include "flash.h"
+#include "ili9341.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +56,8 @@ SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+SRAM_HandleTypeDef hsram4;
+
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
@@ -81,6 +84,7 @@ static void MX_RTC_Init(void);
 static void MX_CRC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SDIO_SD_Init(void);
+static void MX_FSMC_Init(void);
 void StartDefaultTask(void *argument);
 void StartUsbTask(void *argument);
 
@@ -141,7 +145,11 @@ int main(void)
   MX_CRC_Init();
   MX_SPI1_Init();
   MX_SDIO_SD_Init();
+  MX_FSMC_Init();
   /* USER CODE BEGIN 2 */
+  lcdInit();
+  LCD_BL_ON();
+  lcdTest();
 
   /* USER CODE END 2 */
 
@@ -413,17 +421,21 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, LED_0_Pin|LED_1_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, DBG0_Pin|DBG1_Pin|DBG2_Pin|DBG3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, DBG0_Pin|DBG1_Pin|DBG2_Pin|DBG3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LCD_BL_GPIO_Port, LCD_BL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LED_0_Pin LED_1_Pin */
   GPIO_InitStruct.Pin = LED_0_Pin|LED_1_Pin;
@@ -437,7 +449,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SPI1_CS_Pin */
   GPIO_InitStruct.Pin = SPI1_CS_Pin;
@@ -446,9 +458,77 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(SPI1_CS_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : LCD_BL_Pin */
+  GPIO_InitStruct.Pin = LCD_BL_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LCD_BL_GPIO_Port, &GPIO_InitStruct);
+
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
+}
+
+/* FSMC initialization function */
+static void MX_FSMC_Init(void)
+{
+
+  /* USER CODE BEGIN FSMC_Init 0 */
+
+  /* USER CODE END FSMC_Init 0 */
+
+  FSMC_NORSRAM_TimingTypeDef Timing = {0};
+  FSMC_NORSRAM_TimingTypeDef ExtTiming = {0};
+
+  /* USER CODE BEGIN FSMC_Init 1 */
+
+  /* USER CODE END FSMC_Init 1 */
+
+  /** Perform the SRAM4 memory initialization sequence
+  */
+  hsram4.Instance = FSMC_NORSRAM_DEVICE;
+  hsram4.Extended = FSMC_NORSRAM_EXTENDED_DEVICE;
+  /* hsram4.Init */
+  hsram4.Init.NSBank = FSMC_NORSRAM_BANK4;
+  hsram4.Init.DataAddressMux = FSMC_DATA_ADDRESS_MUX_DISABLE;
+  hsram4.Init.MemoryType = FSMC_MEMORY_TYPE_SRAM;
+  hsram4.Init.MemoryDataWidth = FSMC_NORSRAM_MEM_BUS_WIDTH_16;
+  hsram4.Init.BurstAccessMode = FSMC_BURST_ACCESS_MODE_DISABLE;
+  hsram4.Init.WaitSignalPolarity = FSMC_WAIT_SIGNAL_POLARITY_LOW;
+  hsram4.Init.WrapMode = FSMC_WRAP_MODE_DISABLE;
+  hsram4.Init.WaitSignalActive = FSMC_WAIT_TIMING_BEFORE_WS;
+  hsram4.Init.WriteOperation = FSMC_WRITE_OPERATION_ENABLE;
+  hsram4.Init.WaitSignal = FSMC_WAIT_SIGNAL_DISABLE;
+  hsram4.Init.ExtendedMode = FSMC_EXTENDED_MODE_ENABLE;
+  hsram4.Init.AsynchronousWait = FSMC_ASYNCHRONOUS_WAIT_DISABLE;
+  hsram4.Init.WriteBurst = FSMC_WRITE_BURST_DISABLE;
+  hsram4.Init.PageSize = FSMC_PAGE_SIZE_NONE;
+  /* Timing */
+  Timing.AddressSetupTime = 1;
+  Timing.AddressHoldTime = 15;
+  Timing.DataSetupTime = 6;
+  Timing.BusTurnAroundDuration = 0;
+  Timing.CLKDivision = 16;
+  Timing.DataLatency = 17;
+  Timing.AccessMode = FSMC_ACCESS_MODE_A;
+  /* ExtTiming */
+  ExtTiming.AddressSetupTime = 1;
+  ExtTiming.AddressHoldTime = 15;
+  ExtTiming.DataSetupTime = 6;
+  ExtTiming.BusTurnAroundDuration = 0;
+  ExtTiming.CLKDivision = 16;
+  ExtTiming.DataLatency = 17;
+  ExtTiming.AccessMode = FSMC_ACCESS_MODE_A;
+
+  if (HAL_SRAM_Init(&hsram4, &Timing, &ExtTiming) != HAL_OK)
+  {
+    Error_Handler( );
+  }
+
+  /* USER CODE BEGIN FSMC_Init 2 */
+
+  /* USER CODE END FSMC_Init 2 */
 }
 
 /* USER CODE BEGIN 4 */
