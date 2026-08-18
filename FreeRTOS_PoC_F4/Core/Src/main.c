@@ -56,7 +56,7 @@ SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
-SRAM_HandleTypeDef hsram1;
+SRAM_HandleTypeDef hsram4;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -479,41 +479,49 @@ static void MX_FSMC_Init(void)
   /* USER CODE END FSMC_Init 0 */
 
   FSMC_NORSRAM_TimingTypeDef Timing = {0};
+  FSMC_NORSRAM_TimingTypeDef ExtTiming = {0};
 
   /* USER CODE BEGIN FSMC_Init 1 */
 
   /* USER CODE END FSMC_Init 1 */
 
-  /** Perform the SRAM1 memory initialization sequence
+  /** Perform the SRAM4 memory initialization sequence
   */
-  hsram1.Instance = FSMC_NORSRAM_DEVICE;
-  hsram1.Extended = FSMC_NORSRAM_EXTENDED_DEVICE;
-  /* hsram1.Init */
-  hsram1.Init.NSBank = FSMC_NORSRAM_BANK4;
-  hsram1.Init.DataAddressMux = FSMC_DATA_ADDRESS_MUX_DISABLE;
-  hsram1.Init.MemoryType = FSMC_MEMORY_TYPE_SRAM;
-  hsram1.Init.MemoryDataWidth = FSMC_NORSRAM_MEM_BUS_WIDTH_16;
-  hsram1.Init.BurstAccessMode = FSMC_BURST_ACCESS_MODE_DISABLE;
-  hsram1.Init.WaitSignalPolarity = FSMC_WAIT_SIGNAL_POLARITY_LOW;
-  hsram1.Init.WrapMode = FSMC_WRAP_MODE_DISABLE;
-  hsram1.Init.WaitSignalActive = FSMC_WAIT_TIMING_BEFORE_WS;
-  hsram1.Init.WriteOperation = FSMC_WRITE_OPERATION_ENABLE;
-  hsram1.Init.WaitSignal = FSMC_WAIT_SIGNAL_DISABLE;
-  hsram1.Init.ExtendedMode = FSMC_EXTENDED_MODE_DISABLE;
-  hsram1.Init.AsynchronousWait = FSMC_ASYNCHRONOUS_WAIT_DISABLE;
-  hsram1.Init.WriteBurst = FSMC_WRITE_BURST_DISABLE;
-  hsram1.Init.PageSize = FSMC_PAGE_SIZE_NONE;
+  hsram4.Instance = FSMC_NORSRAM_DEVICE;
+  hsram4.Extended = FSMC_NORSRAM_EXTENDED_DEVICE;
+  /* hsram4.Init */
+  hsram4.Init.NSBank = FSMC_NORSRAM_BANK4;
+  hsram4.Init.DataAddressMux = FSMC_DATA_ADDRESS_MUX_DISABLE;
+  hsram4.Init.MemoryType = FSMC_MEMORY_TYPE_SRAM;
+  hsram4.Init.MemoryDataWidth = FSMC_NORSRAM_MEM_BUS_WIDTH_16;
+  hsram4.Init.BurstAccessMode = FSMC_BURST_ACCESS_MODE_DISABLE;
+  hsram4.Init.WaitSignalPolarity = FSMC_WAIT_SIGNAL_POLARITY_LOW;
+  hsram4.Init.WrapMode = FSMC_WRAP_MODE_DISABLE;
+  hsram4.Init.WaitSignalActive = FSMC_WAIT_TIMING_BEFORE_WS;
+  hsram4.Init.WriteOperation = FSMC_WRITE_OPERATION_ENABLE;
+  hsram4.Init.WaitSignal = FSMC_WAIT_SIGNAL_DISABLE;
+  hsram4.Init.ExtendedMode = FSMC_EXTENDED_MODE_ENABLE;
+  hsram4.Init.AsynchronousWait = FSMC_ASYNCHRONOUS_WAIT_DISABLE;
+  hsram4.Init.WriteBurst = FSMC_WRITE_BURST_DISABLE;
+  hsram4.Init.PageSize = FSMC_PAGE_SIZE_NONE;
   /* Timing */
   Timing.AddressSetupTime = 15;
   Timing.AddressHoldTime = 15;
-  Timing.DataSetupTime = 24;
-  Timing.BusTurnAroundDuration = 0;
+  Timing.DataSetupTime = 255;
+  Timing.BusTurnAroundDuration = 15;
   Timing.CLKDivision = 16;
   Timing.DataLatency = 17;
   Timing.AccessMode = FSMC_ACCESS_MODE_A;
   /* ExtTiming */
+  ExtTiming.AddressSetupTime = 15;
+  ExtTiming.AddressHoldTime = 15;
+  ExtTiming.DataSetupTime = 255;
+  ExtTiming.BusTurnAroundDuration = 15;
+  ExtTiming.CLKDivision = 16;
+  ExtTiming.DataLatency = 17;
+  ExtTiming.AccessMode = FSMC_ACCESS_MODE_A;
 
-  if (HAL_SRAM_Init(&hsram1, &Timing, NULL) != HAL_OK)
+  if (HAL_SRAM_Init(&hsram4, &Timing, &ExtTiming) != HAL_OK)
   {
     Error_Handler( );
   }
