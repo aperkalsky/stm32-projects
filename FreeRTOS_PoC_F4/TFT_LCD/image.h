@@ -22,6 +22,6 @@ typedef struct _tImage
 #define GUI_BITMAP			sImage
 #define GUI_CONST_STORAGE	const
 
-extern GUI_CONST_STORAGE GUI_BITMAP bmSTLogo;
+//extern GUI_CONST_STORAGE GUI_BITMAP bmSTLogo;
 
 #endif /* IMAGE_H_ */
