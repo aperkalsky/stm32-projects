@@ -29,6 +29,7 @@
 #include "flash.h"
 #include "ili9341.h"
 #include "sampleImage.h"
+#include "touch.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -73,6 +74,13 @@ const osThreadAttr_t usbTask_attributes = {
   .stack_size = 196 * 4,
   .priority = (osPriority_t) osPriorityNormal1,
 };
+/* Definitions for touchTask */
+osThreadId_t touchTaskHandle;
+const osThreadAttr_t touchTask_attributes = {
+  .name = "touchTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -88,6 +96,7 @@ static void MX_SDIO_SD_Init(void);
 static void MX_FSMC_Init(void);
 void StartDefaultTask(void *argument);
 void StartUsbTask(void *argument);
+void StartTouchTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -192,8 +201,12 @@ int main(void)
   /* creation of usbTask */
   usbTaskHandle = osThreadNew(StartUsbTask, NULL, &usbTask_attributes);
 
+  /* creation of touchTask */
+  touchTaskHandle = osThreadNew(StartTouchTask, NULL, &touchTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  Touch_Init(touchTaskHandle);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -628,6 +641,20 @@ void StartUsbTask(void *argument)
   /* USER CODE BEGIN StartUsbTask */
 	UsbTask_Run(argument);
   /* USER CODE END StartUsbTask */
+}
+
+/* USER CODE BEGIN Header_StartTouchTask */
+/**
+* @brief Function implementing the touchTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTouchTask */
+void StartTouchTask(void *argument)
+{
+  /* USER CODE BEGIN StartTouchTask */
+	TouchTask_Run(argument);
+  /* USER CODE END StartTouchTask */
 }
 
 /**
