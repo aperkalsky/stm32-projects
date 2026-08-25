@@ -3,6 +3,7 @@
 #include "touch.h"
 #include "main.h"
 #include "SEGGER_RTT.h"
+#include <stdint.h>
 
 static osThreadId_t touchTaskHandle;
 
@@ -120,6 +121,53 @@ uint16_t TouchReadCoordinate(uint8_t command)
 	buf>>=4;
 
 	return(buf);
+}
+
+bool TouchConvertRawToScreenPos(uint16_t rawX, uint16_t rawY, ScreenPosDef *pPos)
+{
+    int32_t x;
+    int32_t y;
+
+    if (pPos == NULL)
+    {
+        return false;
+    }
+
+    /*
+     * Calibration:
+     *
+     * Screen X = -0.0642941 * rawX + 255.169
+     * Screen Y =  0.08982995 * rawY - 18.0239
+     *
+     * Scaled by 10000:
+     *
+     * X = (-642.941 * rawX + 2551690) / 10000
+     * Y = ( 898.2995 * rawY - 180239) / 10000
+     *
+     * Using integer coefficients:
+     */
+    x = 2551690L - 64294L * rawX;
+    y = -180239L + 89830L * rawY;
+
+    x /= 10000L;
+    y /= 10000L;
+
+    /*
+     * Reject positions outside the display.
+     *
+     * Display is 240 x 320:
+     * X = 0..239
+     * Y = 0..319
+     */
+    if ((x < 0) || (x >= 240) || (y < 0) || (y >= 320))
+    {
+        return false;
+    }
+
+    pPos->x = (uint16_t)x;
+    pPos->y = (uint16_t)y;
+
+    return true;
 }
 
 void TouchTask_Run(void *argument)
