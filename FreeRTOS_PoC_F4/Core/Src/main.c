@@ -167,10 +167,14 @@ int main(void)
 	lcdPrintf("Hello from LCD");
 	HAL_Delay(2000); */
   lcdFillRGB(COLOR_WHITE);
-	lcdDrawImage(0, 0, &flyAlive);
-	HAL_Delay(2000);
+//	lcdDrawImage(0, 0, &flyAlive);
+	lcdDrawHLine(20, 220, 20, COLOR_BLACK);
+	lcdDrawHLine(20, 220, 300, COLOR_BLACK);
+	lcdDrawVLine(20, 20, 300, COLOR_BLACK);
+	lcdDrawVLine(220, 20, 300, COLOR_BLACK);
+//	HAL_Delay(2000);
 //  lcdFillRGB(COLOR_WHITE);
-	lcdDrawImage(0, 0, &flySmashed);
+//	lcdDrawImage(0, 0, &flySmashed);
 
 
   /* USER CODE END 2 */
