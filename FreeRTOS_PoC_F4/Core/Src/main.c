@@ -176,23 +176,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   lcdInit();
   lcdBacklightOn();
-/*  lcdTest();
-	HAL_Delay(2000);
-	lcdSetTextFont(&Font16);
-	lcdSetCursor(0, lcdGetHeight() - lcdGetTextFont()->Height - 1);
-	lcdSetTextColor(COLOR_WHITE, COLOR_BLACK);
-	lcdPrintf("Hello from LCD");
-	HAL_Delay(2000); */
   lcdFillRGB(COLOR_WHITE);
-//	lcdDrawImage(0, 0, &flyAlive);
-	lcdDrawHLine(20, 220, 20, COLOR_BLACK);
-	lcdDrawHLine(20, 220, 300, COLOR_BLACK);
-	lcdDrawVLine(20, 20, 300, COLOR_BLACK);
-	lcdDrawVLine(220, 20, 300, COLOR_BLACK);
-//	HAL_Delay(2000);
-//  lcdFillRGB(COLOR_WHITE);
-//	lcdDrawImage(0, 0, &flySmashed);
-
 
   /* USER CODE END 2 */
 
