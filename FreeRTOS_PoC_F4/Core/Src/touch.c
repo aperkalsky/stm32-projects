@@ -207,16 +207,22 @@ uint16_t getRandomDelayMs()
 
 bool isHit(ScreenPosDef* pTouchLoc)
 {
+	ScreenPosDef currPosCache;
+
 	if (xSemaphoreTake(imgPosMutexHandle, pdMS_TO_TICKS(100)) == pdTRUE)
 	{
-		// TODO: add comparison code
+		currPosCache.x = imgPosition.x;
+		currPosCache.y = imgPosition.y;
 		xSemaphoreGive(imgPosMutexHandle);
-		return true;
+
+		if(((pTouchLoc->x >= currPosCache.x) && (pTouchLoc->x <= currPosCache.x + SAMPLE_IMAGE_SIZE_PX)) &&
+			((pTouchLoc->y >= currPosCache.y) && (pTouchLoc->y <= currPosCache.y + SAMPLE_IMAGE_SIZE_PX)))
+		{
+			return true;
+		}
 	}
-	else
-	{
-		return false;
-	}
+
+	return false;
 }
 
 void TouchTask_Run(void *argument)
