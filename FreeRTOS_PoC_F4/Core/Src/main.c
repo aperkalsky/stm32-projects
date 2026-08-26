@@ -79,7 +79,19 @@ osThreadId_t touchTaskHandle;
 const osThreadAttr_t touchTask_attributes = {
   .name = "touchTask",
   .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow1,
+};
+/* Definitions for drawTask */
+osThreadId_t drawTaskHandle;
+const osThreadAttr_t drawTask_attributes = {
+  .name = "drawTask",
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for screenPosMutex */
+osMutexId_t screenPosMutexHandle;
+const osMutexAttr_t screenPosMutex_attributes = {
+  .name = "screenPosMutex"
 };
 /* USER CODE BEGIN PV */
 
@@ -97,6 +109,7 @@ static void MX_FSMC_Init(void);
 void StartDefaultTask(void *argument);
 void StartUsbTask(void *argument);
 void StartTouchTask(void *argument);
+void StartDrawTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -181,6 +194,9 @@ int main(void)
 
   /* Init scheduler */
   osKernelInitialize();
+  /* Create the mutex(es) */
+  /* creation of screenPosMutex */
+  screenPosMutexHandle = osMutexNew(&screenPosMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -208,9 +224,12 @@ int main(void)
   /* creation of touchTask */
   touchTaskHandle = osThreadNew(StartTouchTask, NULL, &touchTask_attributes);
 
+  /* creation of drawTask */
+  drawTaskHandle = osThreadNew(StartDrawTask, NULL, &drawTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  Touch_Init(touchTaskHandle);
+  Touch_Init(touchTaskHandle, drawTaskHandle, screenPosMutexHandle);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -659,6 +678,20 @@ void StartTouchTask(void *argument)
   /* USER CODE BEGIN StartTouchTask */
 	TouchTask_Run(argument);
   /* USER CODE END StartTouchTask */
+}
+
+/* USER CODE BEGIN Header_StartDrawTask */
+/**
+* @brief Function implementing the drawTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartDrawTask */
+void StartDrawTask(void *argument)
+{
+  /* USER CODE BEGIN StartDrawTask */
+	DrawTask_Run(argument);
+  /* USER CODE END StartDrawTask */
 }
 
 /**

@@ -6,10 +6,10 @@
 
 #define DELAY_1_MS (1)
 #define DELAY_6_MS (6)
+#define DELAY_100_MS (100)
 
 #define CMD_READ_X 0xD0
 #define CMD_READ_Y 0x90
-
 
 typedef struct
 {
@@ -18,7 +18,8 @@ typedef struct
 } ScreenPosDef;
 
 
-void Touch_Init(osThreadId_t taskHandle);
+void Touch_Init(osThreadId_t hTouch, osThreadId_t hDraw, osMutexId_t hMutex);
 void TouchTask_Run(void *argument);
+void DrawTask_Run(void *argument);
 
 #endif
