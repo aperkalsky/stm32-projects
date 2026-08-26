@@ -9,6 +9,7 @@
 #include "ili9341.h"
 #include "sampleImage.h"
 
+extern RNG_HandleTypeDef hrng;
 
 static osThreadId_t touchTaskHandle;
 static osThreadId_t drawTaskHandle;
@@ -176,17 +177,32 @@ bool TouchConvertRawToScreenPos(uint16_t rawX, uint16_t rawY, ScreenPosDef *pPos
 	return true;
 }
 
+/* Helper function to securely generate a bounded number (e.g., 1 to 100) */
+uint32_t getRandomNumInRange(uint32_t min, uint32_t max)
+{
+    uint32_t raw_random = 0;
+
+    // Generate a true 32-bit hardware random number
+    if (HAL_RNG_GenerateRandomNumber(&hrng, &raw_random) == HAL_OK)
+    {
+        // Scale the raw 32-bit value to your targeted range
+        return (raw_random % (max - min + 1)) + min;
+    }
+
+    // Fallback error value or run your localized Error_Handler()
+    return 0;
+}
+
 void getRandomPosition(ScreenPosDef* pPos)
 {
 	// for meantime - return the initial pos
-	pPos->x = 0;
-	pPos->y = 0;
+	pPos->x = getRandomNumInRange(0, ILI9341_PIXEL_WIDTH - SAMPLE_IMAGE_SIZE_PX);
+	pPos->y = getRandomNumInRange(0, ILI9341_PIXEL_HEIGHT - SAMPLE_IMAGE_SIZE_PX);
 }
 
 uint16_t getRandomDelayMs()
 {
-	// for meantime return fixed value
-	return 1000;
+	return getRandomNumInRange(200, 2000);
 }
 
 bool isHit(ScreenPosDef* pTouchLoc)
@@ -225,19 +241,16 @@ void TouchTask_Run(void *argument)
 
 		while (HAL_GPIO_ReadPin(T_PEN_GPIO_Port, T_PEN_Pin) == GPIO_PIN_RESET)
 		{
-			//			SEGGER_RTT_WriteString(0, "Screen touch\r\n");
-			//			SEGGER_RTT_printf(0, "X = %d\r\n", TouchReadCoordinate(CMD_READ_X));
-			//			SEGGER_RTT_printf(0, "Y = %d\r\n", TouchReadCoordinate(CMD_READ_Y));
 			if(!coordinatesRead)
 			{
 				rawX = TouchReadCoordinate(CMD_READ_X);
 				rawY = TouchReadCoordinate(CMD_READ_Y);
-				SEGGER_RTT_printf(0, "x:%d y:%d\r\n", rawX, rawY);
+//				SEGGER_RTT_printf(0, "x:%d y:%d\r\n", rawX, rawY);
 
 				if(TouchConvertRawToScreenPos(rawX, rawY, &touchLocation))
 				{
 					coordinatesRead = true;
-					SEGGER_RTT_printf(0, "-> x:%d y:%d\r\n", touchLocation.x, touchLocation.y);
+//					SEGGER_RTT_printf(0, "-> x:%d y:%d\r\n", touchLocation.x, touchLocation.y);
 
 					if(isHit(&touchLocation))
 					{
@@ -266,6 +279,7 @@ void TouchTask_Run(void *argument)
 void DrawTask_Run(void *argument)
 {
 	(void)argument;
+	ScreenPosDef oldPosition;
 	ScreenPosDef newPosition;
 
 	while(1)
@@ -275,6 +289,9 @@ void DrawTask_Run(void *argument)
 			// we can run
 			getRandomPosition(&newPosition);
 
+			oldPosition.x = imgPosition.x;
+			oldPosition.y = imgPosition.y;
+
 			if (xSemaphoreTake(imgPosMutexHandle, pdMS_TO_TICKS(100)) == pdTRUE)
 			{
 				imgPosition.x = newPosition.x;
@@ -282,9 +299,11 @@ void DrawTask_Run(void *argument)
 
 				xSemaphoreGive(imgPosMutexHandle);
 
+				// erase previous image and draw a new one
+				lcdFillRect(oldPosition.x, oldPosition.y, SAMPLE_IMAGE_SIZE_PX, SAMPLE_IMAGE_SIZE_PX, COLOR_WHITE);
 				lcdDrawImage(newPosition.x, newPosition.y, &flyAlive);
 
-				SEGGER_RTT_WriteString(0, "Pos changed\r\n");
+//				SEGGER_RTT_WriteString(0, "Pos changed\r\n");
 			}
 			else
 			{
