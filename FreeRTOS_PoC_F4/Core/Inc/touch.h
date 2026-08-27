@@ -18,7 +18,7 @@ typedef struct
 } ScreenPosDef;
 
 
-void Touch_Init(osThreadId_t hTouch, osThreadId_t hDraw, osMutexId_t hMutex);
+void Touch_Init(void);
 void TouchTask_Run(void *argument);
 void DrawTask_Run(void *argument);
 

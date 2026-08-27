@@ -10,19 +10,15 @@
 #include "sampleImage.h"
 
 extern RNG_HandleTypeDef hrng;
+extern osMutexId_t screenPosMutexHandle;
+extern osThreadId_t touchTaskHandle;
+extern osThreadId_t drawTaskHandle;
 
-static osThreadId_t touchTaskHandle;
-static osThreadId_t drawTaskHandle;
-static osMutexId_t imgPosMutexHandle;
 static ScreenPosDef imgPosition;			// position to output an image on screen, mutex protected
 static volatile uint32_t drawDelayStartTime = 0;
 
-void Touch_Init(osThreadId_t hTouch, osThreadId_t hDraw, osMutexId_t hMutex)
+void Touch_Init(void)
 {
-	touchTaskHandle = hTouch;
-	drawTaskHandle = hDraw;
-	imgPosMutexHandle = hMutex;
-
 	imgPosition.x = imgPosition.y = 0;
 }
 
@@ -209,11 +205,11 @@ bool isHit(ScreenPosDef* pTouchLoc)
 {
 	ScreenPosDef currPosCache;
 
-	if (xSemaphoreTake(imgPosMutexHandle, pdMS_TO_TICKS(100)) == pdTRUE)
+	if (xSemaphoreTake(screenPosMutexHandle, pdMS_TO_TICKS(100)) == pdTRUE)
 	{
 		currPosCache.x = imgPosition.x;
 		currPosCache.y = imgPosition.y;
-		xSemaphoreGive(imgPosMutexHandle);
+		xSemaphoreGive(screenPosMutexHandle);
 
 		if(((pTouchLoc->x >= currPosCache.x) && (pTouchLoc->x <= currPosCache.x + SAMPLE_IMAGE_SIZE_PX)) &&
 			((pTouchLoc->y >= currPosCache.y) && (pTouchLoc->y <= currPosCache.y + SAMPLE_IMAGE_SIZE_PX)))
@@ -290,7 +286,8 @@ void DrawTask_Run(void *argument)
 
 	while(1)
 	{
-		if ((osKernelGetTickCount() - drawDelayStartTime) >= pdMS_TO_TICKS(10000))
+		// give 5 sec delay between the rounds
+		if ((osKernelGetTickCount() - drawDelayStartTime) >= pdMS_TO_TICKS(5000))
 		{
 			// we can run
 			getRandomPosition(&newPosition);
@@ -298,12 +295,12 @@ void DrawTask_Run(void *argument)
 			oldPosition.x = imgPosition.x;
 			oldPosition.y = imgPosition.y;
 
-			if (xSemaphoreTake(imgPosMutexHandle, pdMS_TO_TICKS(100)) == pdTRUE)
+			if (xSemaphoreTake(screenPosMutexHandle, pdMS_TO_TICKS(100)) == pdTRUE)
 			{
 				imgPosition.x = newPosition.x;
 				imgPosition.y = newPosition.y;
 
-				xSemaphoreGive(imgPosMutexHandle);
+				xSemaphoreGive(screenPosMutexHandle);
 
 				// erase previous image and draw a new one
 				lcdFillRect(oldPosition.x, oldPosition.y, SAMPLE_IMAGE_SIZE_PX, SAMPLE_IMAGE_SIZE_PX, COLOR_WHITE);

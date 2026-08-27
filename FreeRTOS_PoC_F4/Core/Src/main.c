@@ -217,7 +217,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  Touch_Init(touchTaskHandle, drawTaskHandle, screenPosMutexHandle);
+  Touch_Init();
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
