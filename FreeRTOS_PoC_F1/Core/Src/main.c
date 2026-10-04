@@ -27,6 +27,7 @@
 #include "uart_driver.h"
 #include "uart_task.h"
 #include "pwm_led.h"
+#include "can_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -144,6 +145,17 @@ int main(void)
   }
 
   PWM_LED_Init();
+
+  CAN_StartDriver();
+
+#ifdef DO_CAN_RX
+  CAN_RxInit();
+  SEGGER_RTT_WriteString(0, " CAN Rx started\r\n");
+#endif
+
+#ifdef DO_CAN_TX
+  CAN_TxInit();
+#endif
 
   SEGGER_RTT_WriteString(0, "Hello from F1 board!\r\n");
   /* USER CODE END 2 */

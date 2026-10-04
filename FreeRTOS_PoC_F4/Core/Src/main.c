@@ -30,6 +30,7 @@
 #include "ili9341.h"
 #include "sampleImage.h"
 #include "touch.h"
+#include "can_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +49,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-CAN_HandleTypeDef hcan1;
+CAN_HandleTypeDef hcan;
 
 CRC_HandleTypeDef hcrc;
 
@@ -182,6 +183,17 @@ int main(void)
   lcdBacklightOn();
   lcdFillRGB(COLOR_WHITE);
 
+  CAN_StartDriver();
+
+#ifdef DO_CAN_RX
+  CAN_RxInit();
+  SEGGER_RTT_WriteString(0, " CAN Rx started\r\n");
+#endif
+
+#ifdef DO_CAN_TX
+  CAN_TxInit();
+#endif
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -305,19 +317,19 @@ static void MX_CAN1_Init(void)
   /* USER CODE BEGIN CAN1_Init 1 */
 
   /* USER CODE END CAN1_Init 1 */
-  hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 4;
-  hcan1.Init.Mode = CAN_MODE_NORMAL;
-  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_14TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_3TQ;
-  hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = DISABLE;
-  hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
-  hcan1.Init.ReceiveFifoLocked = DISABLE;
-  hcan1.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan1) != HAL_OK)
+  hcan.Instance = CAN1;
+  hcan.Init.Prescaler = 4;
+  hcan.Init.Mode = CAN_MODE_NORMAL;
+  hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_14TQ;
+  hcan.Init.TimeSeg2 = CAN_BS2_3TQ;
+  hcan.Init.TimeTriggeredMode = DISABLE;
+  hcan.Init.AutoBusOff = DISABLE;
+  hcan.Init.AutoWakeUp = DISABLE;
+  hcan.Init.AutoRetransmission = DISABLE;
+  hcan.Init.ReceiveFifoLocked = DISABLE;
+  hcan.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan) != HAL_OK)
   {
     Error_Handler();
   }
@@ -702,6 +714,22 @@ void StartDefaultTask(void *argument)
     HAL_GPIO_WritePin(GPIOF, LED_0_Pin, ledState);
   	vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(500));
   	ledState = (ledState == GPIO_PIN_RESET)?GPIO_PIN_SET:GPIO_PIN_RESET;
+
+  	// for testing - send canned data over CAN
+    HAL_StatusTypeDef status;
+
+    status = CAN_Send();
+
+    if (status != HAL_OK)
+    {
+    	SEGGER_RTT_printf(0, "CAN TX ERROR: %d\r\n", status);
+    }
+    else
+    {
+    	SEGGER_RTT_printf(0, "CAN TX: Done\r\n");
+    }
+
+    CAN_TestModifyTxData();
 
   }
   /* USER CODE END 5 */
