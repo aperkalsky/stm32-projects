@@ -712,7 +712,7 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
     HAL_GPIO_WritePin(GPIOF, LED_0_Pin, ledState);
-  	vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(500));
+  	vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
   	ledState = (ledState == GPIO_PIN_RESET)?GPIO_PIN_SET:GPIO_PIN_RESET;
 
   	// for testing - send canned data over CAN
@@ -720,17 +720,10 @@ void StartDefaultTask(void *argument)
 
     status = CAN_Send();
 
-    if (status != HAL_OK)
+    if (status == HAL_OK)
     {
-    	SEGGER_RTT_printf(0, "CAN TX ERROR: %d\r\n", status);
+      CAN_TestModifyTxData();
     }
-    else
-    {
-    	SEGGER_RTT_printf(0, "CAN TX: Done\r\n");
-    }
-
-    CAN_TestModifyTxData();
-
   }
   /* USER CODE END 5 */
 }
