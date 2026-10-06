@@ -1,6 +1,6 @@
 #include "usb_task.h"
 #include "cmsis_os.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 //#include "usb_driver.h"
 #include "protocol.h"
 

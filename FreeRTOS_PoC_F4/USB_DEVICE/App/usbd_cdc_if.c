@@ -22,7 +22,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "protocol.h"
 /* USER CODE END INCLUDE */
 

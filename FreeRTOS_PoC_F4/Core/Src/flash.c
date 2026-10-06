@@ -11,7 +11,7 @@
 #include "cmsis_os.h"
 #include "flash.h"
 #include "main.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "debug_io.h"
 
 extern SPI_HandleTypeDef hspi1;
@@ -87,7 +87,7 @@ FlashStatus_t FlashWaitUntilReady(uint32_t timeoutMs, uint32_t pollDelayMs)
 
 		// Inspect the received register byte (stored in statusRxBuf[1])
 		uint8_t statusRegister = statusRxBuf[1];
-		SEGGER_RTT_printf(0, "Flash stat = %02X\r\n", statusRegister);
+		RTT_printf(0, "Flash stat = %02X\r\n", statusRegister);
 
 		if ((statusRegister & STATUS_WIP_BIT) == 0)
 		{

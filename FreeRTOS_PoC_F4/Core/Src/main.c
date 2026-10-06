@@ -24,7 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stm32f4xx_hal.h"	// for DWT
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "usb_task.h"
 #include "flash.h"
 #include "ili9341.h"
@@ -149,7 +149,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+#ifdef DEBUG
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
+#endif
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/

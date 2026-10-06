@@ -2,7 +2,7 @@
 
 #include "touch.h"
 #include "main.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include <stdint.h>
 #include "sampleimage.h"
 #include "semphr.h"
@@ -311,7 +311,7 @@ void DrawTask_Run(void *argument)
 			else
 			{
 				// for some reason the resource is locked. Do not change the position
-				SEGGER_RTT_WriteString(0, "Cannot take mutex\r\n");
+				RTT_puts(0, "Cannot take mutex\r\n");
 			}
 
 			vTaskDelay(pdMS_TO_TICKS(getRandomDelayMs()));
