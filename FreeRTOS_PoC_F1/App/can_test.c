@@ -48,6 +48,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	}
 
 	RTT_printf(0, "\r\n");
+
+	// toggle RX indicator LED
+
+	if(HAL_GPIO_ReadPin(LED_CAN_RX_GPIO_Port, LED_CAN_RX_Pin) != GPIO_PIN_SET)
+	{
+	  HAL_GPIO_WritePin(LED_CAN_RX_GPIO_Port, LED_CAN_RX_Pin, GPIO_PIN_SET);
+	}
+	else
+	{
+	  HAL_GPIO_WritePin(LED_CAN_RX_GPIO_Port, LED_CAN_RX_Pin, GPIO_PIN_RESET);
+	}
 }
 
 static void CAN_FilterInit(void)
