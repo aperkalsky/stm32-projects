@@ -12,7 +12,7 @@
 
 #include "pwm_led.h"
 #include "main.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
@@ -134,7 +134,7 @@ void PWM_LED_DoBreathe()
 	}
 
 	// set brightness
-//	SEGGER_RTT_printf(0, "i=%d d=%d b=%d\r\n", _state.lookupIndex, _state.direction, brightnessTable[_state.lookupIndex]);
+//	RTT_printf(0, "i=%d d=%d b=%d\r\n", _state.lookupIndex, _state.direction, brightnessTable[_state.lookupIndex]);
 	PWM_LED_SetBrightness(_state.lookupIndex);
 }
 

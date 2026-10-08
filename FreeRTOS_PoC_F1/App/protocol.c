@@ -3,7 +3,7 @@
 #include "cmsis_os.h"
 #include "main.h"
 #include "uart_driver.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "pwm_led.h"
 #include "adc.h"
 
@@ -144,7 +144,7 @@ static void OnCmdGetTemperature(uint16_t seq)
 	}
 	else
 	{
-		SEGGER_RTT_printf(0, "Get tempr failed. Status = %d\r\n", status);
+		RTT_printf(0, "Get tempr failed. Status = %d\r\n", status);
 
 		SendResponse(
 				CMD_GET_TEMPERATURE,
@@ -190,7 +190,7 @@ void Protocol_Process(void)
 
 	while (UartDriver_GetByte(&byte))
 	{
-//		SEGGER_RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
+//		RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
 
 		// work around the problem with Prolific USB to Serial that sends 0x00 upon USB connect
 		// rewind the raw packet index, dropping this byte

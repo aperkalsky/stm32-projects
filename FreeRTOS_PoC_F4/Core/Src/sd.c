@@ -4,8 +4,6 @@
 
 extern SD_HandleTypeDef hsd;
 
-static uint8_t sectBuf[SD_SECTOR_SIZE];
-
 void SD_PrintCardInfo()
 {
 	HAL_SD_CardInfoTypeDef info;
@@ -24,8 +22,11 @@ void SD_PrintCardInfo()
 
 void SD_PrintBootSector()
 {
+#ifdef ENABLE_RTT_LOGGING
+
 	HAL_StatusTypeDef result;
 	HAL_SD_CardStateTypeDef state;
+	uint8_t sectBuf[SD_SECTOR_SIZE];
 
 	state = HAL_SD_GetCardState(&hsd);
 	RTT_printf(0, "HAL state = %08X\r\n", state);
@@ -44,4 +45,5 @@ void SD_PrintBootSector()
 		RTT_printf(0, "HAL status = %d\r\n", result);
 		RTT_printf(0, "SD Error   = 0x%08lX\r\n", HAL_SD_GetError(&hsd));
 	}
+#endif
 }

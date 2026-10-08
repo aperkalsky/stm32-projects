@@ -1,5 +1,5 @@
 #include "main.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "can_test.h"
 #include "cmsis_os.h"
 
@@ -36,18 +36,18 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rxHeader,	rxData) != HAL_OK)
 	{
-		SEGGER_RTT_printf(0, "CAN RX ERROR\r\n");
+		RTT_printf(0, "CAN RX ERROR\r\n");
 		return;
 	}
 
-	SEGGER_RTT_printf(0, "CAN RX: ID=0x%03lX DLC=%lu DATA=", rxHeader.StdId, rxHeader.DLC);
+	RTT_printf(0, "CAN RX: ID=0x%03lX DLC=%lu DATA=", rxHeader.StdId, rxHeader.DLC);
 
 	for (uint32_t i = 0; i < rxHeader.DLC; i++)
 	{
-		SEGGER_RTT_printf(0, "%02X ", rxData[i]);
+		RTT_printf(0, "%02X ", rxData[i]);
 	}
 
-	SEGGER_RTT_printf(0, "\r\n");
+	RTT_printf(0, "\r\n");
 }
 
 static void CAN_FilterInit(void)

@@ -170,7 +170,7 @@ FlashStatus_t FlashPageProgram(uint32_t address, const void *buffer, uint32_t le
 	HAL_StatusTypeDef hal_status;
 	osStatus_t rtos_status;
 
-//	SEGGER_RTT_printf(0, "FlashPageProgram 0x%08X, %d\r\n", address, length);
+//	RTT_printf(0, "FlashPageProgram 0x%08X, %d\r\n", address, length);
 
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (length > FLASH_PAGE_SIZE) ||(address + length > FLASH_SIZE))
@@ -261,7 +261,7 @@ static FlashStatus_t FlashSectorErase(uint32_t sectorStart)
 {
 	FlashStatus_t wait_status;
 
-//	SEGGER_RTT_printf(0, "FlashSectorErase 0x%08X\r\n", sectorStart);
+//	RTT_printf(0, "FlashSectorErase 0x%08X\r\n", sectorStart);
 
 	// open the chip
 	FlashWriteEnable();
@@ -291,7 +291,7 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 	FlashStatus_t status = FLASH_OK;
 	uint8_t pageIndex;
 
-//	SEGGER_RTT_printf(0, "FlashWriteSectorPartial(0x%08X off=%d len=%d)\r\n", sectorStart, offset, length);
+//	RTT_printf(0, "FlashWriteSectorPartial(0x%08X off=%d len=%d)\r\n", sectorStart, offset, length);
 
 	if(offset + length > FLASH_SECTOR_SIZE_4K)
 	{
@@ -313,13 +313,13 @@ static FlashStatus_t FlashWriteSectorPartial(uint32_t sectorStart, uint32_t offs
 
 	for(pageIndex = firstPage; pageIndex <= lastPage; pageIndex++)
 	{
-//		SEGGER_RTT_printf(0, "Page %d dirty\r\n", pageIndex);
+//		RTT_printf(0, "Page %d dirty\r\n", pageIndex);
 		dirtyPages |= (1u << pageIndex);
 	}
 
 	// do we need to erase this sector?
 	bool eraseNeeded = FlashSectorNeedsErase(offset, src, length);
-//	SEGGER_RTT_printf(0, "Need erase = %d\r\n", eraseNeeded);
+//	RTT_printf(0, "Need erase = %d\r\n", eraseNeeded);
 
 	if(!eraseNeeded)
 	{
@@ -422,7 +422,7 @@ FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 	FlashStatus_t status;
 	uint8_t* pBuf = (uint8_t*)buffer;
 
-	//	SEGGER_RTT_printf(0, "FlashRead(%08X, %d)\r\n", address, length);
+	//	RTT_printf(0, "FlashRead(%08X, %d)\r\n", address, length);
 
 	// argument validation
 	if((buffer == NULL) || (length == 0) || (address + length > FLASH_SIZE))
@@ -444,7 +444,7 @@ FlashStatus_t FlashRead(uint32_t address, void *buffer, uint32_t length)
 
 		status = FlashReadNonBlocking(address, pBuf, num_bytes_to_read, 200);
 
-		//		SEGGER_RTT_printf(0, "Num bytes to read = %d result = %d \r\n", num_bytes_to_read, status);
+		//		RTT_printf(0, "Num bytes to read = %d result = %d \r\n", num_bytes_to_read, status);
 
 		if(status != FLASH_OK)
 		{
@@ -534,7 +534,7 @@ FlashStatus_t FlashWrite(uint32_t address, const void *buffer, uint32_t length)
 	FlashStatus_t status = FLASH_OK;
 	const uint8_t *pSrc = (const uint8_t *)buffer;
 
-//	SEGGER_RTT_printf(0, "FlashWrite 0x%08X, %d\r\n", address, length);
+//	RTT_printf(0, "FlashWrite 0x%08X, %d\r\n", address, length);
 
 	if ((buffer == NULL) ||	(length == 0U) ||	((address + length) > FLASH_SIZE))
 	{

@@ -247,12 +247,12 @@ void TouchTask_Run(void *argument)
 			{
 				rawX = TouchReadCoordinate(CMD_READ_X);
 				rawY = TouchReadCoordinate(CMD_READ_Y);
-//				SEGGER_RTT_printf(0, "x:%d y:%d\r\n", rawX, rawY);
+//				RTT_printf(0, "x:%d y:%d\r\n", rawX, rawY);
 
 				if(TouchConvertRawToScreenPos(rawX, rawY, &touchLocation))
 				{
 					coordinatesRead = true;
-//					SEGGER_RTT_printf(0, "-> x:%d y:%d\r\n", touchLocation.x, touchLocation.y);
+//					RTT_printf(0, "-> x:%d y:%d\r\n", touchLocation.x, touchLocation.y);
 
 					if(isHit(&touchLocation))
 					{
@@ -306,7 +306,7 @@ void DrawTask_Run(void *argument)
 				lcdFillRect(oldPosition.x, oldPosition.y, SAMPLE_IMAGE_SIZE_PX, SAMPLE_IMAGE_SIZE_PX, COLOR_WHITE);
 				lcdDrawImage(newPosition.x, newPosition.y, &flyAlive);
 
-//				SEGGER_RTT_WriteString(0, "Pos changed\r\n");
+//				RTT_puts(0, "Pos changed\r\n");
 			}
 			else
 			{

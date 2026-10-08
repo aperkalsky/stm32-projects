@@ -12,7 +12,7 @@ void UsbTask_Run(void *argument)
 	for(;;)
 	{
 //		static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
-//		SEGGER_RTT_WriteString(0, "In USB task\r\n");
+//		RTT_puts(0, "In USB task\r\n");
 		Protocol_Process();
 		osDelay(1);
 //	  vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));

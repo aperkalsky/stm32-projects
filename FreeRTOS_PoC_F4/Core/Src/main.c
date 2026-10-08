@@ -149,7 +149,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-#ifdef DEBUG
+#if defined(DEBUG) && defined(ENABLE_RTT_LOGGING)
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
 #endif
   /* USER CODE END 1 */
@@ -189,7 +189,7 @@ int main(void)
 
 #ifdef DO_CAN_RX
   CAN_RxInit();
-  SEGGER_RTT_WriteString(0, " CAN Rx started\r\n");
+  RTT_puts(0, " CAN Rx started\r\n");
 #endif
 
 #ifdef DO_CAN_TX

@@ -23,7 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "uart_driver.h"
 #include "uart_task.h"
 #include "pwm_led.h"
@@ -150,14 +150,14 @@ int main(void)
 
 #ifdef DO_CAN_RX
   CAN_RxInit();
-  SEGGER_RTT_WriteString(0, " CAN Rx started\r\n");
+  RTT_puts(0, " CAN Rx started\r\n");
 #endif
 
 #ifdef DO_CAN_TX
   CAN_TxInit();
 #endif
 
-  SEGGER_RTT_WriteString(0, "Hello from F1 board!\r\n");
+  RTT_puts(0, "Hello from F1 board!\r\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -606,7 +606,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-//    SEGGER_RTT_WriteString(0, "Toggle LEDs\r\n");
+//    RTT_puts(0, "Toggle LEDs\r\n");
 
     // switch LEDs
   	if(HAL_GPIO_ReadPin(GPIOB, LED_D2_Pin) != GPIO_PIN_SET)

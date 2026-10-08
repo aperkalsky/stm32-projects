@@ -2,7 +2,7 @@
 #include "usbd_cdc_if.h"
 #include "cmsis_os.h"
 #include "main.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include <string.h>
 #include "flash.h"
 #include "sd.h"
@@ -113,7 +113,7 @@ static uint8_t SendResponse(
 	memcpy(&tx[pos], &crc, sizeof(crc));
 	pos += TLV_CRC_SIZE;
 
-//	SEGGER_RTT_printf(0, "Xmitting %d bytes\r\n", pos);
+//	RTT_printf(0, "Xmitting %d bytes\r\n", pos);
 
 	return UsbTransmit(tx, pos);
 }
@@ -142,7 +142,7 @@ void OnCmdGetFlashID(uint16_t seq)
 	FlashReset();
 	pOut->id = FlashReadID();
 
-	SEGGER_RTT_printf(0, "Flash ID = %08X\r\n", pOut->id);
+	RTT_printf(0, "Flash ID = %08X\r\n", pOut->id);
 
 	SendResponse(
 			CMD_GET_FLASH_ID,
@@ -157,7 +157,7 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	READ_FLASH_IN* pIn = (READ_FLASH_IN*)payload;
 	FlashStatus_t status = FLASH_OK;
 
-//	SEGGER_RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
+//	RTT_printf(0, "Flash read: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
 
 	// input validation
 	if((pIn->size == 0) || (pIn->size > FLASH_PAGE_SIZE) || ((pIn->address + pIn->size) > FLASH_SIZE))
@@ -186,7 +186,7 @@ void OnCmdReadFlash(uint16_t seq, uint8_t* payload)
 	}
 	else
 	{
-		SEGGER_RTT_printf(0, "Flash read failed. Status = %d\r\n", status);
+		RTT_printf(0, "Flash read failed. Status = %d\r\n", status);
 
 		SendResponse(
 				CMD_READ_FLASH,
@@ -202,7 +202,7 @@ void OnCmdWriteFlash(uint16_t seq, uint8_t* payload)
 	WRITE_FLASH_IN* pIn = (WRITE_FLASH_IN*)payload;
 	FlashStatus_t status = FLASH_OK;
 
-//	SEGGER_RTT_printf(0, "Flash write: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
+//	RTT_printf(0, "Flash write: addr = %08X, len = %d\r\n", pIn->address, pIn->size);
 
 	if((pIn->size == 0) || (pIn->size > FLASH_PAGE_SIZE) || ((pIn->address + pIn->size) > FLASH_SIZE))
 	{
@@ -227,7 +227,7 @@ void OnCmdWriteFlash(uint16_t seq, uint8_t* payload)
 	}
 	else
 	{
-		SEGGER_RTT_printf(0, "Flash write failed. Status = %d\r\n", status);
+		RTT_printf(0, "Flash write failed. Status = %d\r\n", status);
 
 		SendResponse(
 				CMD_WRITE_FLASH,
@@ -242,7 +242,7 @@ void OnCmdTest1(uint16_t seq)
 {
 //	FlashStatus_t ret = FlashChipErase();
 
-//	SEGGER_RTT_printf(0, "Erase status = %d\r\n", ret);
+//	RTT_printf(0, "Erase status = %d\r\n", ret);
 
 //	SD_PrintCardInfo();
 	SD_PrintBootSector();
@@ -284,7 +284,7 @@ static void HandlePacket(
 		uint8_t *payload,
 		uint16_t len)
 {
-//	SEGGER_RTT_printf(0, "type = %d\r\n");
+//	RTT_printf(0, "type = %d\r\n");
 
 	switch(type)
 	{
@@ -325,7 +325,7 @@ void Protocol_Process(void)
 		uint8_t byte =
 				gUsbRxRing[gUsbRxTail];
 
-//		SEGGER_RTT_printf(0, "Byte %02X, h=%d t=%d s=%d\r\n", byte, gUsbRxHead, gUsbRxTail, rxState);
+//		RTT_printf(0, "Byte %02X, h=%d t=%d s=%d\r\n", byte, gUsbRxHead, gUsbRxTail, rxState);
 
 		gUsbRxTail =
 				(gUsbRxTail + 1) %
@@ -405,7 +405,7 @@ void Protocol_Process(void)
 								packetRaw,
 								packetRawIndex - TLV_CRC_SIZE);
 
-//				SEGGER_RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
+//				RTT_printf(0, "rxCrc=%08X, calcCrc=%08X\r\n",rxCrc, calcCrc);
 
 				if(rxCrc == calcCrc)
 				{

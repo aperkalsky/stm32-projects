@@ -1,14 +1,10 @@
 #include "uart_driver.h"
-
 #include "main.h"
 #include "cmsis_os.h"
-
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "task.h"
-
-#include "SEGGER_RTT.h"
-
+#include "my_rtt.h"
 #include <string.h>
 
 extern UART_HandleTypeDef huart1;

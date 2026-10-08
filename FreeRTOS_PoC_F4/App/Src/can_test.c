@@ -1,5 +1,5 @@
 #include "main.h"
-#include "SEGGER_RTT.h"
+#include "my_rtt.h"
 #include "can_test.h"
 #include "cmsis_os.h"
 
@@ -36,18 +36,18 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rxHeader,	rxData) != HAL_OK)
 	{
-		SEGGER_RTT_printf(0, "CAN RX ERROR\r\n");
+		RTT_printf(0, "CAN RX ERROR\r\n");
 		return;
 	}
 
-	SEGGER_RTT_printf(0, "CAN RX: ID=0x%03lX DLC=%lu DATA=", rxHeader.StdId, rxHeader.DLC);
+	RTT_printf(0, "CAN RX: ID=0x%03lX DLC=%lu DATA=", rxHeader.StdId, rxHeader.DLC);
 
 	for (uint32_t i = 0; i < rxHeader.DLC; i++)
 	{
-		SEGGER_RTT_printf(0, "%02X ", rxData[i]);
+		RTT_printf(0, "%02X ", rxData[i]);
 	}
 
-	SEGGER_RTT_printf(0, "\r\n");
+	RTT_printf(0, "\r\n");
 }
 
 static void CAN_FilterInit(void)
@@ -126,18 +126,18 @@ HAL_StatusTypeDef CAN_Send(void)
 
 	if (freeLevel > 0)
 	{
-		SEGGER_RTT_printf(0, "TX mailboxes free: %d\r\n", freeLevel);
+		RTT_printf(0, "TX mailboxes free: %d\r\n", freeLevel);
 
 		if (HAL_CAN_AddTxMessage(&hcan, &txHeader, txData, &txMailbox) != HAL_OK)
 		{
 			uint32_t error = HAL_CAN_GetError(&hcan);
 
-			SEGGER_RTT_printf(0, "CAN TX ERROR: 0x%08lX\r\n", error);
+			RTT_printf(0, "CAN TX ERROR: 0x%08lX\r\n", error);
 			return HAL_ERROR;
 		}
 		else
 		{
-			SEGGER_RTT_WriteString(0, "CAN TX: frame added to mailbox\r\n");
+			RTT_puts(0, "CAN TX: frame added to mailbox\r\n");
 			return HAL_OK;
 		}
 	}
@@ -145,11 +145,11 @@ HAL_StatusTypeDef CAN_Send(void)
 	{
 		uint32_t error = HAL_CAN_GetError(&hcan);
 
-		SEGGER_RTT_WriteString(0, "CAN TX: No free mailbox\r\n");
-		SEGGER_RTT_printf(0, "CAN state: %d\r\n", HAL_CAN_GetState(&hcan));
-		SEGGER_RTT_printf(0, "CAN error: 0x%08lX\r\n", error);
-		SEGGER_RTT_printf(0, "TSR = 0x%08lX\r\n", hcan.Instance->TSR);
-		SEGGER_RTT_printf(0, "ESR = 0x%08lX\r\n", hcan.Instance->ESR);
+		RTT_puts(0, "CAN TX: No free mailbox\r\n");
+		RTT_printf(0, "CAN state: %d\r\n", HAL_CAN_GetState(&hcan));
+		RTT_printf(0, "CAN error: 0x%08lX\r\n", error);
+		RTT_printf(0, "TSR = 0x%08lX\r\n", hcan.Instance->TSR);
+		RTT_printf(0, "ESR = 0x%08lX\r\n", hcan.Instance->ESR);
 
 		return HAL_BUSY;
 	}
