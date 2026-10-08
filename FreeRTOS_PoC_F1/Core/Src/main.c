@@ -109,7 +109,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+#if defined(DEBUG) && defined(ENABLE_RTT_LOGGING)
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
+#endif
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
