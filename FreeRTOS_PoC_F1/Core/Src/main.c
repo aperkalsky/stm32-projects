@@ -28,6 +28,7 @@
 #include "uart_task.h"
 #include "pwm_led.h"
 #include "can_test.h"
+#include "speech_conv_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,10 +53,13 @@ CAN_HandleTypeDef hcan;
 
 CRC_HandleTypeDef hcrc;
 
+DAC_HandleTypeDef hdac;
+
 RTC_HandleTypeDef hrtc;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
@@ -74,6 +78,20 @@ const osThreadAttr_t uartTask_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for speechConvTask */
+osThreadId_t speechConvTaskHandle;
+const osThreadAttr_t speechConvTask_attributes = {
+  .name = "speechConvTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal1,
+};
+/* Definitions for audioPlaybackTa */
+osThreadId_t audioPlaybackTaHandle;
+const osThreadAttr_t audioPlaybackTa_attributes = {
+  .name = "audioPlaybackTa",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal2,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -89,8 +107,12 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_CAN_Init(void);
+static void MX_DAC_Init(void);
+static void MX_TIM6_Init(void);
 void StartDefaultTask(void *argument);
 void StartUartTask(void *argument);
+void StartSpeechConvTask(void *argument);
+void StartAudioPlaybackTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -140,6 +162,8 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   MX_CAN_Init();
+  MX_DAC_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   if(UartDriver_Init() != UART_DRV_OK)
   {
@@ -178,7 +202,7 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  Speech_Init();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -187,6 +211,12 @@ int main(void)
 
   /* creation of uartTask */
   uartTaskHandle = osThreadNew(StartUartTask, NULL, &uartTask_attributes);
+
+  /* creation of speechConvTask */
+  speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
+
+  /* creation of audioPlaybackTa */
+  audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -371,6 +401,46 @@ static void MX_CRC_Init(void)
 }
 
 /**
+  * @brief DAC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DAC_Init(void)
+{
+
+  /* USER CODE BEGIN DAC_Init 0 */
+
+  /* USER CODE END DAC_Init 0 */
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN DAC_Init 1 */
+
+  /* USER CODE END DAC_Init 1 */
+
+  /** DAC Initialization
+  */
+  hdac.Instance = DAC;
+  if (HAL_DAC_Init(&hdac) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** DAC channel OUT1 config
+  */
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DAC_Init 2 */
+
+  /* USER CODE END DAC_Init 2 */
+
+}
+
+/**
   * @brief RTC Initialization Function
   * @param None
   * @retval None
@@ -506,6 +576,44 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 0;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 3264;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -568,9 +676,9 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LED_D2_Pin|LED_D3_Pin, GPIO_PIN_SET);
@@ -651,6 +759,42 @@ void StartUartTask(void *argument)
   /* USER CODE BEGIN StartUartTask */
 	UartTask_Run(argument);
   /* USER CODE END StartUartTask */
+}
+
+/* USER CODE BEGIN Header_StartSpeechConvTask */
+/**
+* @brief Function implementing the speechConvTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSpeechConvTask */
+void StartSpeechConvTask(void *argument)
+{
+  /* USER CODE BEGIN StartSpeechConvTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartSpeechConvTask */
+}
+
+/* USER CODE BEGIN Header_StartAudioPlaybackTask */
+/**
+* @brief Function implementing the audioPlaybackTa thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartAudioPlaybackTask */
+void StartAudioPlaybackTask(void *argument)
+{
+  /* USER CODE BEGIN StartAudioPlaybackTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartAudioPlaybackTask */
 }
 
 /**
