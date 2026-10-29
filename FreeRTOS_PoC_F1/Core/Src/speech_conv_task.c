@@ -6,6 +6,7 @@
 #include <string.h>
 #include "speech_conv_defs.h"
 #include "sam.h"
+#include "tlv_common.h"
 
 extern TaskHandle_t audioTaskHandle;
 
@@ -97,4 +98,34 @@ void SpeechConversionTask(void *argument)
          * utterance has drained, unless you implement cancellation.
          */
     }
+}
+
+TLV_STATUS SPEECH_Say(const char *text, uint16_t requestId)
+{
+  SpeechRequest_t req = {0};
+
+  if (text == NULL)
+  {
+    return TLV_STAT_INVALID_ARGUMENT;
+  }
+
+  size_t len = strnlen(text, SPEECH_TEXT_MAX + 1U);
+
+  if (len > SPEECH_TEXT_MAX)
+  {
+    return TLV_STAT_INVALID_ARGUMENT;
+  }
+
+  memcpy(req.text, text, len);
+  req.text[len] = '\0';
+  req.request_id = requestId;
+
+  if(xQueueSend(speechQueue, &req, 0) == pdPASS)
+  {
+  	return TLV_STAT_OK;
+  }
+  else
+  {
+  	return TLV_STAT_NO_ROOM;
+  }
 }

@@ -5,6 +5,7 @@
 #include <queue.h>
 #include <stream_buffer.h>
 #include "speech_conv_defs.h"
+#include "tlv_common.h"
 
 extern QueueHandle_t speechQueue;
 extern StreamBufferHandle_t pcmStream;
@@ -15,5 +16,6 @@ extern uint16_t audioDma[AUDIO_DMA_SAMPLES];
 
 void Speech_Init(void);
 void SpeechConversionTask(void *argument);
+TLV_STATUS SPEECH_Say(const char *text, uint16_t requestId);
 
 #endif

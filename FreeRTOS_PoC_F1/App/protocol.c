@@ -6,6 +6,8 @@
 #include "my_rtt.h"
 #include "pwm_led.h"
 #include "adc.h"
+#include "speech_conv_defs.h"
+#include "speech_conv_task.h"
 
 typedef enum
 {
@@ -155,6 +157,15 @@ static void OnCmdGetTemperature(uint16_t seq)
 	}
 }
 
+static void OnCmdSay(uint16_t seq, uint8_t *payload)
+{
+	SAY_IN* pParam = (SAY_IN*)payload;
+
+	TLV_STATUS ret = SPEECH_Say(pParam->text, seq);
+
+	SendResponse(CMD_SAY, seq, ret, NULL, 0);
+}
+
 static void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(type, seq, TLV_STAT_NOT_IMPLEMENTED, NULL, 0);
@@ -176,6 +187,10 @@ static void HandlePacket(uint8_t type, uint16_t seq, uint8_t *payload, uint16_t 
 
 	case CMD_GET_TEMPERATURE:
 		OnCmdGetTemperature(seq);
+		break;
+
+	case CMD_SAY:
+		OnCmdSay(seq, payload);
 		break;
 
 	default:
