@@ -25,7 +25,7 @@ extern CRC_HandleTypeDef hcrc;
 static RxState_t rxState = RX_TYPE;
 
 static uint8_t packetType;
-static uint16_t packetLength;
+static uint16_t payloadLength;
 static uint16_t packetSeq;
 
 static uint8_t rxPayload[TLV_MAX_RX_PAYLOAD_SIZE];
@@ -45,7 +45,7 @@ static uint32_t words[CRC_CALC_BUF_SIZE]; // buffer for crc32 calculation
 static void ResetRxState(void)
 {
 	rxState = RX_TYPE;
-	packetLength = 0;
+	payloadLength = 0;
 	packetSeq = 0;
 	rxPayloadIndex = 0;
 	rxCrcIndex = 0;
@@ -205,7 +205,7 @@ void Protocol_Process(void)
 
 	while (UartDriver_GetByte(&byte))
 	{
-		RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
+//		RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
 
 		// work around the problem with Prolific USB to Serial that sends 0x00 upon USB connect
 		// rewind the raw packet index, dropping this byte
@@ -228,17 +228,18 @@ void Protocol_Process(void)
 		{
 		case RX_TYPE:
 			packetType = byte;
-			packetLength = 0;
+			payloadLength = 0;
 			rxState = RX_LEN_LO;
 			break;
 
 		case RX_LEN_LO:
-			packetLength = byte;
+			payloadLength = byte;
 			rxState = RX_LEN_HI;
 			break;
 
 		case RX_LEN_HI:
-			packetLength |= ((uint16_t)byte << 8);
+			payloadLength |= ((uint16_t)byte << 8);
+			RTT_printf(0, "Pload len = %d\r\n", payloadLength);
 			rxState = RX_SEQ_LO;
 			break;
 
@@ -251,7 +252,7 @@ void Protocol_Process(void)
 			packetSeq |= ((uint16_t)byte << 8);
 			rxPayloadIndex = 0;
 
-			if(packetLength == 0)
+			if(payloadLength == 0)
 			{
 				rxCrcIndex = 0;
 				rxState = RX_CRC;
@@ -269,7 +270,9 @@ void Protocol_Process(void)
 				rxPayload[rxPayloadIndex++] = byte;
 			}
 
-			if (rxPayloadIndex >= packetLength)
+			RTT_printf(0, "Pload idx = %d\r\n", rxPayloadIndex);
+
+			if (rxPayloadIndex >= payloadLength)
 			{
 				rxCrcIndex = 0;
 				rxState = RX_CRC;
@@ -277,7 +280,9 @@ void Protocol_Process(void)
 			break;
 
 		case RX_CRC:
+
 			crcBytes[rxCrcIndex++] = byte;
+			RTT_printf(0, "CRC idx = %d byte = %02X\r\n", rxCrcIndex, crcBytes[rxCrcIndex]);
 
 			if (rxCrcIndex == TLV_CRC_SIZE)
 			{
@@ -289,7 +294,7 @@ void Protocol_Process(void)
 
 				if (rxCrc == calcCrc)
 				{
-					HandlePacket(packetType, packetSeq, rxPayload, packetLength);
+					HandlePacket(packetType, packetSeq, rxPayload, payloadLength);
 				}
 				else
 				{
