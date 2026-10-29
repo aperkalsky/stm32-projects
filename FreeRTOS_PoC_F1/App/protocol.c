@@ -239,7 +239,7 @@ void Protocol_Process(void)
 
 		case RX_LEN_HI:
 			payloadLength |= ((uint16_t)byte << 8);
-			RTT_printf(0, "Pload len = %d\r\n", payloadLength);
+//			RTT_printf(0, "Pload len = %d\r\n", payloadLength);
 			rxState = RX_SEQ_LO;
 			break;
 
@@ -270,8 +270,6 @@ void Protocol_Process(void)
 				rxPayload[rxPayloadIndex++] = byte;
 			}
 
-			RTT_printf(0, "Pload idx = %d\r\n", rxPayloadIndex);
-
 			if (rxPayloadIndex >= payloadLength)
 			{
 				rxCrcIndex = 0;
@@ -280,9 +278,7 @@ void Protocol_Process(void)
 			break;
 
 		case RX_CRC:
-
 			crcBytes[rxCrcIndex++] = byte;
-			RTT_printf(0, "CRC idx = %d byte = %02X\r\n", rxCrcIndex, crcBytes[rxCrcIndex]);
 
 			if (rxCrcIndex == TLV_CRC_SIZE)
 			{
