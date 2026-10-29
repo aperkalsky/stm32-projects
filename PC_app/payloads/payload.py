@@ -136,10 +136,18 @@ class GetTemperatureOut(SerializablePayload):
 @dataclass
 class SayIn(SerializablePayload):
 
-    FORMAT = "<c"
+    FORMAT = "<64s"
 
     phrase: str
 
     @classmethod
     def pack(cls, phrase: str) -> bytes:
-        return struct.pack(cls.FORMAT, phrase)
+        encoded_phrase = phrase.encode("utf-8")
+        max_phrase_size = calcsize(cls.FORMAT) - 1
+
+        if len(encoded_phrase) > max_phrase_size:
+            raise ValueError(
+                f"phrase must be at most {max_phrase_size} UTF-8 bytes"
+            )
+
+        return struct.pack(cls.FORMAT, encoded_phrase)

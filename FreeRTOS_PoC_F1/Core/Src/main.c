@@ -214,10 +214,10 @@ int main(void)
   uartTaskHandle = osThreadNew(StartUartTask, NULL, &uartTask_attributes);
 
   /* creation of speechConvTask */
-  speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
+//  speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
 
   /* creation of audioPlaybackTa */
-  audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
+//  audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -773,7 +773,7 @@ void StartSpeechConvTask(void *argument)
 {
   /* USER CODE BEGIN StartSpeechConvTask */
 	SpeechConversionTask(argument);
-	/* USER CODE END StartSpeechConvTask */
+  /* USER CODE END StartSpeechConvTask */
 }
 
 /* USER CODE BEGIN Header_StartAudioPlaybackTask */
@@ -787,7 +787,7 @@ void StartAudioPlaybackTask(void *argument)
 {
   /* USER CODE BEGIN StartAudioPlaybackTask */
 	AudioPlaybackTask(argument);
-	/* USER CODE END StartAudioPlaybackTask */
+  /* USER CODE END StartAudioPlaybackTask */
 }
 
 /**

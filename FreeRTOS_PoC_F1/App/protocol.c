@@ -205,7 +205,7 @@ void Protocol_Process(void)
 
 	while (UartDriver_GetByte(&byte))
 	{
-//		RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
+		RTT_printf(0, "byte=%02X state=%d idx=%d\r\n", byte, rxState, packetRawIndex);
 
 		// work around the problem with Prolific USB to Serial that sends 0x00 upon USB connect
 		// rewind the raw packet index, dropping this byte
