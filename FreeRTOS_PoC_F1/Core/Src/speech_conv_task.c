@@ -7,16 +7,13 @@
 #include "speech_conv_defs.h"
 #include "sam.h"
 
-static TaskHandle_t audioTaskHandle;
-static uint16_t audioDma[AUDIO_DMA_SAMPLES];
+extern TaskHandle_t audioTaskHandle;
 
-
+uint16_t audioDma[AUDIO_DMA_SAMPLES];
 QueueHandle_t speechQueue;
 StreamBufferHandle_t pcmStream;
-
-
-static bool audioStarted;
-static volatile bool audioUnderrun;
+bool audioStarted;
+volatile bool audioUnderrun;
 
 void Speech_Init(void)
 {
@@ -30,7 +27,7 @@ void Speech_Init(void)
     configASSERT(pcmStream != NULL);
 }
 
-static void SpeechConversionTask(void *argument)
+void SpeechConversionTask(void *argument)
 {
     SpeechRequest_t req;
     uint8_t pcm[SAM_CHUNK_SIZE];

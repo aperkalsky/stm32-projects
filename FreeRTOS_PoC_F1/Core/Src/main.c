@@ -29,6 +29,7 @@
 #include "pwm_led.h"
 #include "can_test.h"
 #include "speech_conv_task.h"
+#include "audio_playback_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -771,12 +772,8 @@ void StartUartTask(void *argument)
 void StartSpeechConvTask(void *argument)
 {
   /* USER CODE BEGIN StartSpeechConvTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartSpeechConvTask */
+	SpeechConversionTask(argument);
+	/* USER CODE END StartSpeechConvTask */
 }
 
 /* USER CODE BEGIN Header_StartAudioPlaybackTask */
@@ -789,12 +786,8 @@ void StartSpeechConvTask(void *argument)
 void StartAudioPlaybackTask(void *argument)
 {
   /* USER CODE BEGIN StartAudioPlaybackTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartAudioPlaybackTask */
+	AudioPlaybackTask(argument);
+	/* USER CODE END StartAudioPlaybackTask */
 }
 
 /**

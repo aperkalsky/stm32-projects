@@ -1,9 +1,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "stm32f1xx_hal.h"
-#include "audio_playback_task.h"
 #include "speech_conv_defs.h"
 #include "speech_conv_task.h"
+
+extern DAC_HandleTypeDef hdac;
+
+TaskHandle_t audioTaskHandle;
 
 static void FillDmaHalf(uint16_t *dst)
 {
@@ -31,7 +34,7 @@ static void FillDmaHalf(uint16_t *dst)
     }
 }
 
-static void AudioPlaybackTask(void *argument)
+void AudioPlaybackTask(void *argument)
 {
     uint32_t events;
 
