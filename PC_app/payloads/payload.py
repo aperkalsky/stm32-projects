@@ -132,3 +132,14 @@ class GetTemperatureOut(SerializablePayload):
     def from_bytes(cls, payload):
         temperature = struct.unpack(cls.FORMAT, payload)
         return cls(temperature)
+
+@dataclass
+class SayIn(SerializablePayload):
+
+    FORMAT = "<c"
+
+    phrase: str
+
+    @classmethod
+    def pack(cls, phrase: str) -> bytes:
+        return struct.pack(cls.FORMAT, phrase)

@@ -2,7 +2,6 @@
 
 from payloads.payload import PwmLedCtlIn
 from protocol.commands import CMD_PWM_LED_CTL
-#from protocol.status import TlvStatus
 
 MODE_MANUAL = 0
 MODE_AUTO = 1

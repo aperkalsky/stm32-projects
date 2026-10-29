@@ -13,7 +13,7 @@ class AdcApi:
 
         response = self.device.execute(CMD_GET_TEMPERATURE, b'')
 
-        if response.status == TlvStatus.OK:
+        if response.status == TlvStatus.TLV_STAT_OK:
             return GetTemperatureOut.from_bytes(
                 response.payload
             )

@@ -13,7 +13,7 @@ class FirmwareApi:
 
         response = self.device.execute(CMD_GET_FW_VERSION, b'')
 
-        if response.status == TlvStatus.OK:
+        if response.status == TlvStatus.TLV_STAT_OK:
             return GetFwVersionOut.from_bytes(
                 response.payload
             )
