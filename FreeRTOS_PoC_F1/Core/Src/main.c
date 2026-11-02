@@ -30,6 +30,7 @@
 #include "can_test.h"
 #include "speech_conv_task.h"
 #include "audio_playback_task.h"
+#include "diags.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,7 +91,7 @@ const osThreadAttr_t speechConvTask_attributes = {
 osThreadId_t audioPlaybackTaHandle;
 const osThreadAttr_t audioPlaybackTa_attributes = {
   .name = "audioPlaybackTa",
-  .stack_size = 128 * 4,
+  .stack_size = 384 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
 /* USER CODE BEGIN PV */
@@ -209,15 +210,27 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  FreeRTOS_PrintTaskInfo();
+  FreeRTOS_PrintTaskList();
+  FreeRTOS_PrintFreeHeapSize();
 
   /* creation of uartTask */
   uartTaskHandle = osThreadNew(StartUartTask, NULL, &uartTask_attributes);
+  FreeRTOS_PrintTaskInfo();
+  FreeRTOS_PrintTaskList();
+  FreeRTOS_PrintFreeHeapSize();
 
   /* creation of speechConvTask */
   speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
+  FreeRTOS_PrintTaskInfo();
+  FreeRTOS_PrintTaskList();
+  FreeRTOS_PrintFreeHeapSize();
 
   /* creation of audioPlaybackTa */
   audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
+  FreeRTOS_PrintTaskInfo();
+  FreeRTOS_PrintTaskList();
+  FreeRTOS_PrintFreeHeapSize();
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
