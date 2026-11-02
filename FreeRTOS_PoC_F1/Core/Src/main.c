@@ -214,10 +214,10 @@ int main(void)
   uartTaskHandle = osThreadNew(StartUartTask, NULL, &uartTask_attributes);
 
   /* creation of speechConvTask */
-//  speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
+  speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
 
   /* creation of audioPlaybackTa */
-//  audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
+  audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

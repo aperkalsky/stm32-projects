@@ -10,8 +10,7 @@
 
 extern TaskHandle_t audioTaskHandle;
 
-uint16_t audioDma[AUDIO_DMA_SAMPLES];
-QueueHandle_t speechQueue;
+QueueHandle_t speechQueue;	// input queue for text to be pronounced
 StreamBufferHandle_t pcmStream;
 bool audioStarted;
 volatile bool audioUnderrun;
@@ -20,9 +19,7 @@ void Speech_Init(void)
 {
 	speechQueue = xQueueCreate(1, sizeof(SpeechRequest_t));
 
-	pcmStream = xStreamBufferCreate(
-			PCM_STREAM_SIZE,
-			1U);   /* Minimum trigger level */
+	pcmStream = xStreamBufferCreate(PCM_STREAM_SIZE, 1U);
 
 	configASSERT(speechQueue != NULL);
 	configASSERT(pcmStream != NULL);
@@ -33,10 +30,12 @@ void SpeechConversionTask(void *argument)
 	SpeechRequest_t req;
 	uint8_t pcm[SAM_CHUNK_SIZE];
 
-	for (;;)
+	while(1)
 	{
 		if (xQueueReceive(speechQueue, &req, portMAX_DELAY) != pdPASS)
+		{
 			continue;
+		}
 
 		/*
 		 * This example assumes one utterance at a time.
@@ -46,22 +45,19 @@ void SpeechConversionTask(void *argument)
 
 		if (!SAM_Begin(req.text))
 		{
-			/* Report conversion failure to protocol/application. */
+			// TODO: Report conversion failure to protocol/application
 			continue;
 		}
 
-		for (;;)
+		while(1)
 		{
 			size_t produced = 0;
 
-			SAM_Status status = SAM_GenerateChunk(
-					pcm,
-					sizeof(pcm),
-					&produced);
+			SAM_Status status = SAM_GenerateChunk(pcm, sizeof(pcm),	&produced);
 
 			if (status == SAM_STATUS_ERROR)
 			{
-				/* Report conversion failure. */
+				// TODO: Report conversion failure
 				break;
 			}
 
@@ -71,24 +67,18 @@ void SpeechConversionTask(void *argument)
 
 				while (offset < produced)
 				{
-					size_t sent = xStreamBufferSend(
-							pcmStream,
-							&pcm[offset],
-							produced - offset,
-							portMAX_DELAY);
-
+					size_t sent = xStreamBufferSend(pcmStream, &pcm[offset], produced - offset,	portMAX_DELAY);
 					offset += sent;
 				}
 
-				/* Wake the playback task if it is waiting to start. */
-				xTaskNotify(
-						audioTaskHandle,
-						AUDIO_EVT_DATA,
-						eSetBits);
+				// Wake the playback task if it is waiting to start
+				xTaskNotify( audioTaskHandle,	AUDIO_EVT_DATA,	eSetBits);
 			}
 
 			if (status == SAM_STATUS_DONE)
+			{
 				break;
+			}
 		}
 
 		/*

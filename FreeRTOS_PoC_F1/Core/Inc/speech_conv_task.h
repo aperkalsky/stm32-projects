@@ -12,7 +12,6 @@ extern StreamBufferHandle_t pcmStream;
 extern volatile bool audioUnderrun;
 //extern TaskHandle_t audioTaskHandle;
 extern bool audioStarted;
-extern uint16_t audioDma[AUDIO_DMA_SAMPLES];
 
 void Speech_Init(void);
 void SpeechConversionTask(void *argument);
