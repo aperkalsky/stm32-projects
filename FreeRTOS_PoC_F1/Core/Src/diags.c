@@ -8,8 +8,9 @@
 #include "my_rtt.h"
 #include "cmsis_os.h"
 
-
 #define MAX_MONITORED_TASKS    10
+
+static char buffer[512];
 
 void FreeRTOS_PrintTaskInfo(void)
 {
@@ -25,7 +26,6 @@ void FreeRTOS_PrintTaskInfo(void)
 		return;
 	}
 
-	RTT_printf(0, "\r\n");
 	RTT_printf(0, "FreeRTOS Task Information\r\n");
 	RTT_printf(0, "--------------------------\r\n");
 
@@ -57,8 +57,6 @@ void FreeRTOS_PrintTaskInfo(void)
 
 void FreeRTOS_PrintTaskList(void)
 {
-	char buffer[512];
-
 	vTaskList(buffer);
 
 	RTT_printf(0, "%s\r\n", buffer);
@@ -66,11 +64,9 @@ void FreeRTOS_PrintTaskList(void)
 
 void FreeRTOS_PrintRunTimeStats(void)
 {
-	char buffer[512];
-
 	vTaskGetRunTimeStats(buffer);
 
-	RTT_puts(0, "Name          Stat Prio Stack Num\r\n");
+	RTT_printf(0, "Name          Stat Prio Stack Num\r\n");
 	RTT_printf(0, "%s\r\n", buffer);
 }
 

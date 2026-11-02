@@ -15,6 +15,6 @@ extern bool audioStarted;
 
 void Speech_Init(void);
 void SpeechConversionTask(void *argument);
-TLV_STATUS SPEECH_Say(const char *text, uint16_t requestId);
+TLV_STATUS Speech_Say(const char *text, uint16_t requestId);
 
 #endif

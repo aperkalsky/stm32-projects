@@ -161,7 +161,7 @@ static void OnCmdSay(uint16_t seq, uint8_t *payload)
 {
 	SAY_IN* pParam = (SAY_IN*)payload;
 
-	TLV_STATUS ret = SPEECH_Say(pParam->text, seq);
+	TLV_STATUS ret = Speech_Say(pParam->text, seq);
 
 	SendResponse(CMD_SAY, seq, ret, NULL, 0);
 }

@@ -84,7 +84,7 @@ const osThreadAttr_t uartTask_attributes = {
 osThreadId_t speechConvTaskHandle;
 const osThreadAttr_t speechConvTask_attributes = {
   .name = "speechConvTask",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for audioPlaybackTa */
@@ -210,27 +210,15 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  FreeRTOS_PrintTaskInfo();
-  FreeRTOS_PrintTaskList();
-  FreeRTOS_PrintFreeHeapSize();
 
   /* creation of uartTask */
   uartTaskHandle = osThreadNew(StartUartTask, NULL, &uartTask_attributes);
-  FreeRTOS_PrintTaskInfo();
-  FreeRTOS_PrintTaskList();
-  FreeRTOS_PrintFreeHeapSize();
 
   /* creation of speechConvTask */
   speechConvTaskHandle = osThreadNew(StartSpeechConvTask, NULL, &speechConvTask_attributes);
-  FreeRTOS_PrintTaskInfo();
-  FreeRTOS_PrintTaskList();
-  FreeRTOS_PrintFreeHeapSize();
 
   /* creation of audioPlaybackTa */
   audioPlaybackTaHandle = osThreadNew(StartAudioPlaybackTask, NULL, &audioPlaybackTa_attributes);
-  FreeRTOS_PrintTaskInfo();
-  FreeRTOS_PrintTaskList();
-  FreeRTOS_PrintFreeHeapSize();
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -756,7 +744,6 @@ void StartDefaultTask(void *argument)
   	}
 
   vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
-
   }
   /* USER CODE END 5 */
 }

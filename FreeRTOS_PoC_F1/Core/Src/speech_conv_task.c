@@ -1,9 +1,9 @@
+#include <stdbool.h>
+#include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "stream_buffer.h"
-#include <stdbool.h>
-#include <string.h>
 #include "speech_conv_defs.h"
 #include "sam.h"
 #include "tlv_common.h"
@@ -90,7 +90,7 @@ void SpeechConversionTask(void *argument)
 	}
 }
 
-TLV_STATUS SPEECH_Say(const char *text, uint16_t requestId)
+TLV_STATUS Speech_Say(const char *text, uint16_t requestId)
 {
 	SpeechRequest_t req = {0};
 
