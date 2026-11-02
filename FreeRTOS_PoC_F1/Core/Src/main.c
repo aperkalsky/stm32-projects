@@ -70,7 +70,7 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for uartTask */
 osThreadId_t uartTaskHandle;
@@ -84,14 +84,14 @@ osThreadId_t speechConvTaskHandle;
 const osThreadAttr_t speechConvTask_attributes = {
   .name = "speechConvTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal1,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for audioPlaybackTa */
 osThreadId_t audioPlaybackTaHandle;
 const osThreadAttr_t audioPlaybackTa_attributes = {
   .name = "audioPlaybackTa",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal2,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
 /* USER CODE BEGIN PV */
 
