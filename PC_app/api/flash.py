@@ -13,7 +13,7 @@ class FlashApi:
 
         response = self.device.execute(CMD_GET_FLASH_ID, b'')
 
-        if response.status == TlvStatus.OK:
+        if response.status == TlvStatus.TLV_STAT_OK:
             return GetFlashIdOut.from_bytes(
                 response.payload
             )
@@ -25,7 +25,7 @@ class FlashApi:
         payload = ReadFlashIn.pack(address, size)
         response = self.device.execute(CMD_READ_FLASH, payload)
 
-        if response.status == TlvStatus.OK and response.payload is not None:
+        if response.status == TlvStatus.TLV_STAT_OK and response.payload is not None:
             # Firmware returns a full flash page buffer; slice to requested size
             return ReadFlashOut.from_bytes(response.payload[:size])
         return None

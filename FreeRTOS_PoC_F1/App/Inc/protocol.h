@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include "tlv_common.h"
 
+#define TLV_MAX_RX_PAYLOAD_SIZE 64
+#define TLV_MAX_TX_PAYLOAD_SIZE TLV_MAX_RX_PAYLOAD_SIZE
+#define RX_RAW_PACKET_BUF_SIZE (TLV_RX_HEADER_SIZE + TLV_MAX_RX_PAYLOAD_SIZE + TLV_RX_FOOTER_SIZE)
+#define TX_RAW_PACKET_BUF_SIZE (TLV_TX_HEADER_SIZE + TLV_MAX_TX_PAYLOAD_SIZE + TLV_TX_FOOTER_SIZE)
 
 #pragma pack(push, 1)
 
@@ -19,17 +23,18 @@ typedef struct
 	uint16_t param;
 }PWM_LED_CTL_IN;
 
-typedef struct{
+typedef struct
+{
 	int32_t temperature;
 } GET_TEMPERATURE_OUT;
 
+typedef struct
+{
+	char text[TLV_MAX_RX_PAYLOAD_SIZE];
+} SAY_IN;
+
 
 #pragma pack(pop)
-
-#define TLV_MAX_RX_PAYLOAD_SIZE 64
-#define TLV_MAX_TX_PAYLOAD_SIZE sizeof(GET_FW_VERSION_OUT)
-#define RX_RAW_PACKET_BUF_SIZE (TLV_RX_HEADER_SIZE + TLV_MAX_RX_PAYLOAD_SIZE + TLV_RX_FOOTER_SIZE)
-#define TX_RAW_PACKET_BUF_SIZE (TLV_TX_HEADER_SIZE + TLV_MAX_TX_PAYLOAD_SIZE + TLV_TX_FOOTER_SIZE)
 
 // The buffer size for CRC calculation is in 4-byte words. We need to relate its size to the size
 // of TX buffer payload (it's longer than Rx) plus header size. Add extra word to compensate the

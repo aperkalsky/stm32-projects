@@ -5,8 +5,12 @@ from api.flash import FlashApi
 from api.common import CommonApi
 from api.pwm_led import PwmLedApi
 from api.adc import AdcApi
+from api.speech import SpeechApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
+
+DISPLAY_REQUEST = True
+DISPLAY_RESPONSE = True
 
 class Device:
 
@@ -19,6 +23,7 @@ class Device:
         self.common = CommonApi(self)
         self.pwm = PwmLedApi(self)
         self.adc = AdcApi(self)
+        self.speech = SpeechApi(self)
 
         self._seq = 0
 
@@ -27,7 +32,17 @@ class Device:
         request = TlvRequest(cmd, self._seq, payload)
         self._seq += 1
 
-        self.transport.send(build_request(request))
+        request_raw = build_request(request)
+
+        if DISPLAY_REQUEST:
+            print("Request: ")
+            for byte in request_raw: print(" %02X " % byte)
+
+        self.transport.send(request_raw)
         response_raw = self.transport.receive()
-#        for byte in response_raw: print(" %02X " % byte)
+
+        if DISPLAY_RESPONSE:
+            print("Response: ")
+            for byte in response_raw: print(" %02X " % byte)
+            
         return  parse_response(response_raw)

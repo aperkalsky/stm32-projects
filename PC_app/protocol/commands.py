@@ -11,5 +11,6 @@ CMD_TEST_4          = 0x08
 CMD_TEST_5          = 0x09
 CMD_PWM_LED_CTL     = 0x0A
 CMD_GET_TEMPERATURE = 0x0B
+CMD_SAY             = 0x0C
 
 

@@ -11,7 +11,7 @@ class CommonApi:
     def test1(self):
         response = self.device.execute(CMD_TEST_1, b'')
 
-        if response.status == TlvStatus.OK:
+        if response.status == TlvStatus.TLV_STAT_OK:
             return True
         else:
             return False
@@ -19,7 +19,7 @@ class CommonApi:
     def test2(self):
         response = self.device.execute(CMD_TEST_2, b'')
 
-        if response.status == TlvStatus.OK:
+        if response.status == TlvStatus.TLV_STAT_OK:
             return True
         else:
             return False

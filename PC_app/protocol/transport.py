@@ -6,6 +6,7 @@ import serial
 from protocol.crc import stm32_crc32
 from protocol.tlv import TLV_TX_HEADER_SIZE
 
+DISPLAY_TRANSPORT = True
 
 class CdcTransport:
 
@@ -34,8 +35,12 @@ class CdcTransport:
         return bytes(data)
 
     def send(self, data: bytes):
-#        for byte in data:
-#            print("-%02X-" % byte)
+
+        if DISPLAY_TRANSPORT:
+            print("Transport: sending %d bytes\n" % len(data))
+            for byte in data:
+                print("-%02X-" % byte)
+
         self.ser.write(data)
 
     def receive(self) -> bytes:

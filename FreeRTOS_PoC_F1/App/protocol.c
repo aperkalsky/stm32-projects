@@ -6,6 +6,8 @@
 #include "my_rtt.h"
 #include "pwm_led.h"
 #include "adc.h"
+#include "speech_conv_defs.h"
+#include "speech_conv_task.h"
 
 typedef enum
 {
@@ -23,7 +25,7 @@ extern CRC_HandleTypeDef hcrc;
 static RxState_t rxState = RX_TYPE;
 
 static uint8_t packetType;
-static uint16_t packetLength;
+static uint16_t payloadLength;
 static uint16_t packetSeq;
 
 static uint8_t rxPayload[TLV_MAX_RX_PAYLOAD_SIZE];
@@ -43,7 +45,7 @@ static uint32_t words[CRC_CALC_BUF_SIZE]; // buffer for crc32 calculation
 static void ResetRxState(void)
 {
 	rxState = RX_TYPE;
-	packetLength = 0;
+	payloadLength = 0;
 	packetSeq = 0;
 	rxPayloadIndex = 0;
 	rxCrcIndex = 0;
@@ -155,6 +157,16 @@ static void OnCmdGetTemperature(uint16_t seq)
 	}
 }
 
+static void OnCmdSay(uint16_t seq, uint8_t *payload)
+{
+	SAY_IN* pParam = (SAY_IN*)payload;
+//	char phrase[] = "Hello! My name is SAM. I work as a speech synthesizer on S T M thirty two.";
+
+	TLV_STATUS ret = Speech_Say(pParam->text, seq);
+
+	SendResponse(CMD_SAY, seq, ret, NULL, 0);
+}
+
 static void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(type, seq, TLV_STAT_NOT_IMPLEMENTED, NULL, 0);
@@ -176,6 +188,10 @@ static void HandlePacket(uint8_t type, uint16_t seq, uint8_t *payload, uint16_t 
 
 	case CMD_GET_TEMPERATURE:
 		OnCmdGetTemperature(seq);
+		break;
+
+	case CMD_SAY:
+		OnCmdSay(seq, payload);
 		break;
 
 	default:
@@ -213,17 +229,18 @@ void Protocol_Process(void)
 		{
 		case RX_TYPE:
 			packetType = byte;
-			packetLength = 0;
+			payloadLength = 0;
 			rxState = RX_LEN_LO;
 			break;
 
 		case RX_LEN_LO:
-			packetLength = byte;
+			payloadLength = byte;
 			rxState = RX_LEN_HI;
 			break;
 
 		case RX_LEN_HI:
-			packetLength |= ((uint16_t)byte << 8);
+			payloadLength |= ((uint16_t)byte << 8);
+//			RTT_printf(0, "Pload len = %d\r\n", payloadLength);
 			rxState = RX_SEQ_LO;
 			break;
 
@@ -236,7 +253,7 @@ void Protocol_Process(void)
 			packetSeq |= ((uint16_t)byte << 8);
 			rxPayloadIndex = 0;
 
-			if(packetLength == 0)
+			if(payloadLength == 0)
 			{
 				rxCrcIndex = 0;
 				rxState = RX_CRC;
@@ -254,7 +271,7 @@ void Protocol_Process(void)
 				rxPayload[rxPayloadIndex++] = byte;
 			}
 
-			if (rxPayloadIndex >= packetLength)
+			if (rxPayloadIndex >= payloadLength)
 			{
 				rxCrcIndex = 0;
 				rxState = RX_CRC;
@@ -274,7 +291,7 @@ void Protocol_Process(void)
 
 				if (rxCrc == calcCrc)
 				{
-					HandlePacket(packetType, packetSeq, rxPayload, packetLength);
+					HandlePacket(packetType, packetSeq, rxPayload, payloadLength);
 				}
 				else
 				{

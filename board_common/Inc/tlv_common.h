@@ -61,6 +61,7 @@
 #define CMD_TEST_5             0x09
 #define CMD_PWM_LED_CTL        0x0A
 #define CMD_GET_TEMPERATURE    0x0B
+#define CMD_SAY                0x0C
 
 
 // TLV response statuses
@@ -69,6 +70,8 @@
 #define TLV_STAT_NOT_IMPLEMENTED	0x0002
 #define TLV_STAT_INVALID_ARGUMENT 0X0003
 #define TLV_STAT_FAILURE					0x0004
+#define TLV_STAT_NO_ROOM					0x0005
+
 
 typedef uint16_t TLV_STATUS;
 
