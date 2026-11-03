@@ -32,8 +32,8 @@ def say_greeting():
     dev.speech.speech_say("on S T M thirty two")
 
 def main():
-#    say_hello()
-    say_greeting()
+    say_hello()
+#    say_greeting()
 
 if __name__ == "__main__":
     main()

@@ -160,6 +160,7 @@ static void OnCmdGetTemperature(uint16_t seq)
 static void OnCmdSay(uint16_t seq, uint8_t *payload)
 {
 	SAY_IN* pParam = (SAY_IN*)payload;
+//	char phrase[] = "Hello! My name is SAM. I work as a speech synthesizer on S T M thirty two.";
 
 	TLV_STATUS ret = Speech_Say(pParam->text, seq);
 
