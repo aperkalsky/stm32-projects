@@ -3,6 +3,7 @@
 #include "stm32f1xx_hal.h"
 #include "speech_conv_defs.h"
 #include "speech_conv_task.h"
+#include "my_rtt.h"
 
 extern DAC_HandleTypeDef hdac;
 
@@ -49,6 +50,8 @@ void AudioPlaybackTask(void *argument)
 
 			FillDmaHalf(&audioDma[0]);
 			FillDmaHalf(&audioDma[AUDIO_HALF_SAMPLES]);
+
+			RTT_printf(0, "DMA filled\r\n");
 
 			if (HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1,	(uint32_t *)audioDma,	AUDIO_DMA_SAMPLES, DAC_ALIGN_12B_R) != HAL_OK)
 			{
