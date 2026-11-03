@@ -8,9 +8,12 @@ from api.device import Device
 from config.F1_config import SERIAL_PORT, BAUD_RATE
 #from protocol import status
 
+#PHRASE = "Hello"
+PHRASE = "Hi! I am Sam"
+
 def say_hello():
     dev = Device(SERIAL_PORT, BAUD_RATE)
-    status = dev.speech.speech_say("Hello")
+    status = dev.speech.speech_say(PHRASE)
     print(f"Status = {status}")
 
 def main():

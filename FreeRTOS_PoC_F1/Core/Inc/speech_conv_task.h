@@ -12,6 +12,7 @@ extern StreamBufferHandle_t pcmStream;
 extern volatile bool audioUnderrun;
 //extern TaskHandle_t audioTaskHandle;
 extern bool audioStarted;
+extern bool speechConversionDone;
 
 void Speech_Init(void);
 void SpeechConversionTask(void *argument);

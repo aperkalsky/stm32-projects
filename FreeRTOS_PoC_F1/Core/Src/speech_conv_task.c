@@ -14,6 +14,7 @@ QueueHandle_t speechQueue;	// input queue for text to be pronounced
 StreamBufferHandle_t pcmStream;
 bool audioStarted;
 volatile bool audioUnderrun;
+volatile bool speechConversionDone = false;
 
 void Speech_Init(void)
 {
@@ -23,6 +24,27 @@ void Speech_Init(void)
 
 	configASSERT(speechQueue != NULL);
 	configASSERT(pcmStream != NULL);
+}
+
+static bool Audio_SendPcm(const uint8_t *pcm, size_t length)
+{
+	size_t offset = 0;
+
+	while (offset < length)
+	{
+		size_t sent = xStreamBufferSend(pcmStream, &pcm[offset], length - offset, portMAX_DELAY);
+
+		if (sent == 0U)
+		{
+			return false;
+		}
+
+		offset += sent;
+
+		xTaskNotify(audioTaskHandle, AUDIO_EVT_DATA, eSetBits);
+	}
+
+	return true;
 }
 
 void SpeechConversionTask(void *argument)
@@ -37,56 +59,61 @@ void SpeechConversionTask(void *argument)
 			continue;
 		}
 
-		/*
-		 * This example assumes one utterance at a time.
-		 * Do not reset pcmStream while the previous utterance
-		 * is still playing.
-		 */
+		// Previous utterance must have been completely drained.
+		configASSERT(xStreamBufferBytesAvailable(pcmStream) == 0U);
+
+		// Start a new utterance.
+		speechConversionDone = false;
+
+		bool conversionOk = true;
 
 		if (!SAM_Begin(req.text))
 		{
-			// TODO: Report conversion failure to protocol/application
-			continue;
+			conversionOk = false;
 		}
-
-		while(1)
+		else
 		{
-			size_t produced = 0;
-
-			SAM_Status status = SAM_GenerateChunk(pcm, sizeof(pcm),	&produced);
-
-			if (status == SAM_STATUS_ERROR)
+			while(1)
 			{
-				// TODO: Report conversion failure
-				break;
-			}
+				size_t produced = 0;
 
-			if (produced > 0U)
-			{
-				size_t offset = 0;
+				SAM_Status status =	SAM_GenerateChunk(pcm, sizeof(pcm), &produced);
 
-				while (offset < produced)
+				if (status == SAM_STATUS_ERROR)
 				{
-					size_t sent = xStreamBufferSend(pcmStream, &pcm[offset], produced - offset,	portMAX_DELAY);
-					offset += sent;
+					conversionOk = false;
+					break;
 				}
 
-				// Wake the playback task if it is waiting to start
-				xTaskNotify( audioTaskHandle,	AUDIO_EVT_DATA,	eSetBits);
-			}
+				if (produced > 0U)
+				{
+					if (!Audio_SendPcm(pcm, produced))
+					{
+						conversionOk = false;
+						break;
+					}
+				}
 
-			if (status == SAM_STATUS_DONE)
-			{
-				break;
+				if (status == SAM_STATUS_DONE)
+				{
+					break;
+				}
 			}
 		}
 
-		/*
-		 * Signal end-of-utterance here using a task notification,
-		 * event group, or explicit stream protocol.
-		 * Do not accept the next request until the previous
-		 * utterance has drained, unless you implement cancellation.
-		 */
+		if (conversionOk)
+		{
+			// All PCM samples have been sent to the stream buffer.
+			speechConversionDone = true;
+
+			// Playback must drain the remaining PCM data.
+			xTaskNotify(audioTaskHandle, AUDIO_EVT_STOP, eSetBits);
+		}
+		else
+		{
+			// Conversion failed. Playback must handle the error.
+			xTaskNotify(audioTaskHandle, AUDIO_EVT_ERROR, eSetBits);
+		}
 	}
 }
 
