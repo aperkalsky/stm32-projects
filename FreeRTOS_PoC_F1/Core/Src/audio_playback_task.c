@@ -10,7 +10,7 @@ extern TIM_HandleTypeDef htim6;
 
 TaskHandle_t audioTaskHandle;
 static uint16_t audioDma[AUDIO_DMA_SAMPLES];	// buffer for passing the PCM stream to DAC via DMA
-static uint8_t pcmChunk[AUDIO_HALF_SAMPLES];
+static uint8_t pcmChunk[AUDIO_HALF_SAMPLES];	// buffer for receiving PCM chunks from SAM
 static bool audioHalfHasData[2] = { false, false };
 
 static bool FillDmaHalf(uint16_t *dst)
