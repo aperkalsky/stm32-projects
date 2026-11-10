@@ -31,6 +31,7 @@
 #include "speech_conv_task.h"
 #include "audio_playback_task.h"
 #include "diags.h"
+#include "weather.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -180,6 +181,7 @@ int main(void)
   PWM_LED_Init();
 
   CAN_StartDriver();
+  WEATHER_Init();
 
 #ifdef DO_CAN_RX
   CAN_RxInit();
