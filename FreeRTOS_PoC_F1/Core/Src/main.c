@@ -74,7 +74,7 @@ DMA_HandleTypeDef hdma_usart1_tx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for uartTask */
@@ -776,6 +776,10 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+  	float temperature = 0;
+  	float pressure = 0;
+  	float humidity = 0;
+
 //    RTT_puts(0, "Toggle LEDs\r\n");
 
     // switch LEDs
@@ -790,7 +794,17 @@ void StartDefaultTask(void *argument)
   	  HAL_GPIO_WritePin(GPIOB, LED_D3_Pin, GPIO_PIN_SET);
   	}
 
-  vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
+    if(WEATHER_GetTemperatureAndHumidity(&temperature, &humidity))
+    {
+    	RTT_printf(0, "T = %d RH = %d\r\n", (int)temperature, (int)humidity);
+    }
+
+    if(WEATHER_GetPressure(&pressure))
+    {
+    	RTT_printf(0, "P = %d\r\n", (int)pressure);
+    }
+
+    vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
   }
   /* USER CODE END 5 */
 }
