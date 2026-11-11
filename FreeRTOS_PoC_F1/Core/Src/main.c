@@ -173,15 +173,14 @@ int main(void)
   MX_TIM6_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  if(UartDriver_Init() != UART_DRV_OK)
-  {
-  	Error_Handler();
-  }
-
   PWM_LED_Init();
 
   CAN_StartDriver();
-  WEATHER_Init();
+
+  if(!WEATHER_Init())
+  {
+  	RTT_puts(0, "Weather sensors init failed\r\n");
+  }
 
 #ifdef DO_CAN_RX
   CAN_RxInit();
@@ -203,7 +202,10 @@ int main(void)
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+  if(UartDriver_Init() != UART_DRV_OK)
+  {
+  	Error_Handler();
+  }
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -846,11 +848,6 @@ void StartAudioPlaybackTask(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-	if (htim->Instance == TIM4)
-	{
-		PWM_LED_DoBreathe();
-		return;
-	}
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM2)
@@ -858,7 +855,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+/*	if (htim->Instance == TIM4)
+	{
+		PWM_LED_DoBreathe();
+		return;
+	}*/
   /* USER CODE END Callback 1 */
 }
 
