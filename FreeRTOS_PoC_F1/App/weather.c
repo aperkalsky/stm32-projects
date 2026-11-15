@@ -6,6 +6,7 @@
 
 #include "main.h"
 #include "weather.h"
+#include "my_rtt.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -306,6 +307,10 @@ bool WEATHER_GetPressure(float *pPres)
 			| ((int32_t)data[4] << 8) | data[5];
 	adc_temperature >>= 4;
 
+//	RTT_printf(0, "ADC pressure:    %ld (0x%05lX)\r\n", (long)adc_pressure, (unsigned long)adc_pressure);
+
+//	RTT_printf(0, "ADC temperature: %ld (0x%05lX)\r\n", (long)adc_temperature, (unsigned long)adc_temperature);
+
 	var1_temperature = ((((adc_temperature >> 3)
 			- ((int32_t)bmp280_calibration.dig_T1 << 1)))
 			* (int32_t)bmp280_calibration.dig_T2) >> 11;
@@ -314,6 +319,12 @@ bool WEATHER_GetPressure(float *pPres)
 			* ((adc_temperature >> 4) - (int32_t)bmp280_calibration.dig_T1))
 			>> 12) * (int32_t)bmp280_calibration.dig_T3) >> 14;
 	t_fine = var1_temperature + var2_temperature;
+
+//	RTT_printf(0, "t_fine: %d\r\n", (int)t_fine);
+
+//	int32_t temperature = (t_fine * 5 + 128) >> 8;
+
+//	RTT_printf(0, "BMP280 temperature: %d.%02d C\r\n", temperature / 100, abs(temperature % 100));
 
 	var1 = ((int64_t)t_fine) - 128000;
 	var2 = var1 * var1 * (int64_t)bmp280_calibration.dig_P6;
