@@ -62,6 +62,7 @@
 #define CMD_PWM_LED_CTL        0x0A
 #define CMD_GET_TEMPERATURE    0x0B
 #define CMD_SAY                0x0C
+#define CMD_GET_WEATHER        0x0D
 
 
 // TLV response statuses

@@ -6,11 +6,12 @@ from api.common import CommonApi
 from api.pwm_led import PwmLedApi
 from api.adc import AdcApi
 from api.speech import SpeechApi
+from api.weather import WeatherApi
 from protocol.tlv import TlvResponse, TlvRequest, build_request, parse_response
 from protocol.transport import CdcTransport
 
-DISPLAY_REQUEST = True
-DISPLAY_RESPONSE = True
+DISPLAY_REQUEST = False
+DISPLAY_RESPONSE = False
 
 class Device:
 
@@ -24,6 +25,7 @@ class Device:
         self.pwm = PwmLedApi(self)
         self.adc = AdcApi(self)
         self.speech = SpeechApi(self)
+        self.weather = WeatherApi(self)
 
         self._seq = 0
 

@@ -6,7 +6,7 @@ import serial
 from protocol.crc import stm32_crc32
 from protocol.tlv import TLV_TX_HEADER_SIZE
 
-DISPLAY_TRANSPORT = True
+DISPLAY_TRANSPORT = False
 
 class CdcTransport:
 

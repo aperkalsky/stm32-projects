@@ -776,9 +776,9 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-  	float temperature = 0;
-  	float pressure = 0;
-  	float humidity = 0;
+//  	float temperature = 0;
+//  	float pressure = 0;
+//  	float humidity = 0;
 
 //    RTT_puts(0, "Toggle LEDs\r\n");
 
@@ -794,7 +794,7 @@ void StartDefaultTask(void *argument)
   	  HAL_GPIO_WritePin(GPIOB, LED_D3_Pin, GPIO_PIN_SET);
   	}
 
-    if(WEATHER_GetTemperatureAndHumidity(&temperature, &humidity))
+/*    if(WEATHER_GetTemperatureAndHumidity(&temperature, &humidity))
     {
     	RTT_printf(0, "T = %d RH = %d\r\n", (int)temperature, (int)humidity);
     }
@@ -802,7 +802,7 @@ void StartDefaultTask(void *argument)
     if(WEATHER_GetPressure(&pressure))
     {
     	RTT_printf(0, "P = %d\r\n", (int)pressure);
-    }
+    }*/
 
     vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
   }

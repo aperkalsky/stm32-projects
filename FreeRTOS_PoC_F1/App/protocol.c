@@ -8,6 +8,7 @@
 #include "adc.h"
 #include "speech_conv_defs.h"
 #include "speech_conv_task.h"
+#include "weather.h"
 
 typedef enum
 {
@@ -167,6 +168,30 @@ static void OnCmdSay(uint16_t seq, uint8_t *payload)
 	SendResponse(CMD_SAY, seq, ret, NULL, 0);
 }
 
+static void OnCmdGetWeather(uint16_t seq, uint8_t *payload)
+{
+	GET_WEATHER_OUT* pOut = (GET_WEATHER_OUT*)txPayload;
+
+	if(WEATHER_GetTemperatureAndHumidity(&pOut->temperature, &pOut->humidity) && WEATHER_GetPressure(&pOut->pressure))
+	{
+		SendResponse(
+				CMD_GET_WEATHER,
+				seq,
+				TLV_STAT_OK,
+				txPayload,
+				sizeof(GET_WEATHER_OUT));
+	}
+	else
+	{
+		SendResponse(
+				CMD_GET_WEATHER,
+				seq,
+				TLV_STAT_FAILURE,
+				NULL,
+				0);
+	}
+}
+
 static void OnUnknownCommand(uint8_t type, uint16_t seq)
 {
 	SendResponse(type, seq, TLV_STAT_NOT_IMPLEMENTED, NULL, 0);
@@ -192,6 +217,10 @@ static void HandlePacket(uint8_t type, uint16_t seq, uint8_t *payload, uint16_t 
 
 	case CMD_SAY:
 		OnCmdSay(seq, payload);
+		break;
+
+	case CMD_GET_WEATHER:
+		OnCmdGetWeather(seq, payload);
 		break;
 
 	default:

@@ -33,6 +33,13 @@ typedef struct
 	char text[TLV_MAX_RX_PAYLOAD_SIZE];
 } SAY_IN;
 
+typedef struct
+{
+	float temperature;
+	float humidity;
+	float pressure;
+} GET_WEATHER_OUT;
+
 
 #pragma pack(pop)
 
