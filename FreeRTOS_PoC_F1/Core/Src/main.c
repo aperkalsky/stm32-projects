@@ -31,6 +31,7 @@
 #include "speech_conv_task.h"
 #include "audio_playback_task.h"
 #include "diags.h"
+#include "weather.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,6 +59,8 @@ CRC_HandleTypeDef hcrc;
 DAC_HandleTypeDef hdac;
 DMA_HandleTypeDef hdma_dac_ch1;
 
+I2C_HandleTypeDef hi2c1;
+
 RTC_HandleTypeDef hrtc;
 
 TIM_HandleTypeDef htim3;
@@ -71,7 +74,7 @@ DMA_HandleTypeDef hdma_usart1_tx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for uartTask */
@@ -112,6 +115,7 @@ static void MX_ADC1_Init(void);
 static void MX_CAN_Init(void);
 static void MX_DAC_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_I2C1_Init(void);
 void StartDefaultTask(void *argument);
 void StartUartTask(void *argument);
 void StartSpeechConvTask(void *argument);
@@ -167,15 +171,16 @@ int main(void)
   MX_CAN_Init();
   MX_DAC_Init();
   MX_TIM6_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  if(UartDriver_Init() != UART_DRV_OK)
-  {
-  	Error_Handler();
-  }
-
   PWM_LED_Init();
 
   CAN_StartDriver();
+
+  if(!WEATHER_Init())
+  {
+  	RTT_puts(0, "Weather sensors init failed\r\n");
+  }
 
 #ifdef DO_CAN_RX
   CAN_RxInit();
@@ -197,7 +202,10 @@ int main(void)
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+  if(UartDriver_Init() != UART_DRV_OK)
+  {
+  	Error_Handler();
+  }
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -440,6 +448,40 @@ static void MX_DAC_Init(void)
   /* USER CODE BEGIN DAC_Init 2 */
 
   /* USER CODE END DAC_Init 2 */
+
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
 
 }
 
@@ -734,6 +776,10 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+//  	float temperature = 0;
+//  	float pressure = 0;
+//  	float humidity = 0;
+
 //    RTT_puts(0, "Toggle LEDs\r\n");
 
     // switch LEDs
@@ -748,7 +794,17 @@ void StartDefaultTask(void *argument)
   	  HAL_GPIO_WritePin(GPIOB, LED_D3_Pin, GPIO_PIN_SET);
   	}
 
-  vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
+/*    if(WEATHER_GetTemperatureAndHumidity(&temperature, &humidity))
+    {
+    	RTT_printf(0, "T = %d RH = %d\r\n", (int)temperature, (int)humidity);
+    }
+
+    if(WEATHER_GetPressure(&pressure))
+    {
+    	RTT_printf(0, "P = %d\r\n", (int)pressure);
+    }*/
+
+    vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(1000));
   }
   /* USER CODE END 5 */
 }
@@ -806,11 +862,6 @@ void StartAudioPlaybackTask(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-	if (htim->Instance == TIM4)
-	{
-		PWM_LED_DoBreathe();
-		return;
-	}
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM2)
@@ -818,7 +869,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+/*	if (htim->Instance == TIM4)
+	{
+		PWM_LED_DoBreathe();
+		return;
+	}*/
   /* USER CODE END Callback 1 */
 }
 

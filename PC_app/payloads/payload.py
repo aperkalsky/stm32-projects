@@ -151,3 +151,17 @@ class SayIn(SerializablePayload):
             )
 
         return struct.pack(cls.FORMAT, encoded_phrase)
+
+@dataclass
+class GetWeatherOut(SerializablePayload):
+
+    FORMAT = "<fff"
+
+    temperature: float
+    humidity: float
+    pressure: float
+
+    @classmethod
+    def from_bytes(cls, payload):
+        temperature, humidity, pressure = struct.unpack(cls.FORMAT, payload)
+        return cls(temperature, humidity, pressure)
